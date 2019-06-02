@@ -12,6 +12,8 @@
 #define MASKKEY_MASK 0x80
 #define UnMASKKEY_MASK 0x00
 
+#define WSSeakSelf __weak typeof(self) wsseakSelf = self;
+
 typedef NS_ENUM(uint8_t, FIN_MASK) {
     FIN_CONTINUE_MASK = 0x00,
     FIN_FINAL_MASK = 0x80
@@ -42,11 +44,13 @@ typedef NS_ENUM(NSInteger, STATUS_CODE) {
     Status_Code_Connection_Normal = 1000,
     Status_Code_Connection_Close = 1001,
     Status_Code_Connection_Doing = 1002,
+    
     Status_Code_Connection_Error = 1003,
     Status_Code_Protocol_Error = 1004,
     Status_Code_Invalid_UTF8 = 1007,
 };
 
+static int64_t timeout = 10; //连接超时时间
 static size_t fragment = 0x4000;    //分片阀值
 static NSString *WebSocket_Notification_Status_Code_Change = @"WebSocket_Notification_Status_Code_Change";
 

@@ -10,6 +10,8 @@
 #import "WebSocketUtility.h"
 #import <CoreTelephony/CTCellularData.h>
 
+extern STATUS_CODE Code_Connection;
+
 @interface WebSocketProxy ()<NSStreamDelegate>
 @property (weak, nonatomic) id<WebSocketProxyDelegate> delegate;
 @property (strong, nonatomic) NSOutputStream *outputStream;
@@ -18,25 +20,28 @@
 @property (strong, nonatomic) NSURLRequest *request;
 @property (strong, nonatomic) NSString *securityKey;
 @property (strong, nonatomic) NSURL *url;
+@property (nonatomic) BOOL sendHeader;
 @property (nonatomic) BOOL trust;
 
 @end
 
 @implementation WebSocketProxy
 
-- (instancetype)initWith:(NSString *)urlString delegate:(id<WebSocketProxyDelegate>)delegate
+- (instancetype)initWith:(id<WebSocketProxyDelegate>)delegate
 {
     self = [super init];
     if (self) {
-        _url = [NSURL URLWithString:urlString];
-        _request = [NSURLRequest requestWithURL:_url];
         _delegate = delegate;
-        _headerData = [NSMutableData data];
+        
     }
     return self;
 }
 
-- (void)connect{
+- (void)connect:(NSString *)urlString{
+    _url = [NSURL URLWithString:urlString];
+    _request = [NSURLRequest requestWithURL:_url];
+    _headerData = [NSMutableData data];
+    
     CTCellularData *cellularData = [[CTCellularData alloc] init];
     cellularData.cellularDataRestrictionDidUpdateNotifier = ^(CTCellularDataRestrictedState state) {
         switch (state) {
@@ -53,6 +58,12 @@
                 break;
         }
     };
+    
+    [self startConnect];
+}
+
+- (void)reconnect{
+    [self startConnect];
 }
 
 - (void)startConnect{
@@ -64,10 +75,21 @@
     if (CFArrayGetCount(arrayRef)) {
         CFDictionaryRef dic = CFArrayGetValueAtIndex(arrayRef, 0);
         CFStringRef proxyType =  CFDictionaryGetValue(dic, kCFProxyTypeKey);
-        NSLog(@"proxyType = %@",proxyType);
+        NSLog(@"%@",proxyType);
     }
     
     [self initialStream];
+    
+    WSSeakSelf;
+    dispatch_time_t dispatchTime = dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC);
+    dispatch_after(dispatchTime, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        if (Code_Connection != Status_Code_Connection_Normal) {
+            [wsseakSelf closeStream];
+
+            NSError *error = [NSError errorWithDomain:@"The connection is timeout!" code:Status_Code_Connection_Error userInfo:@{}];
+            ![wsseakSelf.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [wsseakSelf.delegate didConnect:wsseakSelf.inputStream outputStream:wsseakSelf.outputStream error:error];
+        }
+    });
 }
 
 - (void)initialStream{
@@ -101,15 +123,22 @@
     [_outputStream close];
     [_inputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
     [_outputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
+    [self resetStream];
+}
+
+- (void)resetStream{
+    _trust = NO;
+    _sendHeader = NO;
+    _headerData = nil;
+    _securityKey = nil;
     _inputStream = nil;
     _outputStream = nil;
 }
 
 - (void)sendShakehandHeader{
-    static BOOL hasSend = NO;
-    
-    if (!hasSend) {
-        hasSend = YES;
+    if (!_sendHeader) {
+        _sendHeader = YES;
+        
         uint8_t bytes[16];
         NSAssert(SecRandomCopyBytes(kSecRandomDefault, 16, bytes) == 0, @"Failed to generate random bytes");
         _securityKey = [[NSData dataWithBytes:bytes length:16] base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
@@ -121,7 +150,7 @@
         if (length < data.length) {
             [self closeStream];
             NSError *error = [NSError errorWithDomain:@"Occur error when sending ShakehandHeader" code:-1 userInfo:@{}];
-            [self.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [self.delegate didConnect:self.inputStream outputStream:self.outputStream error:error];
+            ![self.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [self.delegate didConnect:self.inputStream outputStream:self.outputStream error:error];
         }
     }
 }
@@ -131,8 +160,8 @@
     NSInteger length = [_inputStream read:buffer maxLength:getpagesize()];
     
     [_headerData appendData:[NSData dataWithBytes:buffer length:length]];
-    NSRange range = [_headerData rangeOfData:self.seperateData options:NSDataSearchBackwards range:NSMakeRange(0, _headerData.length)];
-    if (range.location != NSNotFound) {
+    NSRange range = [_headerData rangeOfData:self.seperateData options:NSDataSearchBackwards | NSDataSearchAnchored range:NSMakeRange(0, _headerData.length)];
+    if (_headerData && range.location != NSNotFound) {
         NSData * data = [_headerData subdataWithRange:NSMakeRange(0, range.location + range.length)];
         CFHTTPMessageRef messageRef = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, false);
         CFHTTPMessageAppendBytes(messageRef, data.bytes, data.length);
@@ -157,8 +186,8 @@
             }
         }
         
-        !error ? : [self closeStream];
         ![self.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [self.delegate didConnect:self.inputStream outputStream:self.outputStream error:error];
+        error ? [self closeStream] : [self resetStream];
          NSLog(@"%@",[[NSString alloc] initWithData:(__bridge NSData * _Nonnull)(CFHTTPMessageCopySerializedMessage(messageRef)) encoding:NSUTF8StringEncoding]);
     }
 }
@@ -179,11 +208,11 @@
     switch (eventCode) {
         case NSStreamEventHasBytesAvailable:
             _trust = self.isSecurity ? (_trust ? _trust : [self checkSecurity:aStream]) : YES;
-            !_trust ? [self closeStream] : [self receiveShakehandHeader];
+            _trust ? [self receiveShakehandHeader] : [self closeStream];
             break;
         case NSStreamEventHasSpaceAvailable:
             _trust = self.isSecurity ? (_trust ? _trust : [self checkSecurity:aStream]) : YES;
-            !_trust ? [self closeStream] : [self sendShakehandHeader];
+            _trust ? [self sendShakehandHeader] : [self closeStream];
             break;
         case NSStreamEventErrorOccurred:
             [self closeStream];

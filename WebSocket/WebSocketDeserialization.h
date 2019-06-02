@@ -13,6 +13,6 @@
 
 - (instancetype)initWith:(id<WebSoketProtocol>)delegate;
 
-- (void)receiveData:(dispatch_data_t)data;
+- (void)receiveData:(dispatch_data_t __strong*)tempData;
 
 @end

@@ -16,8 +16,10 @@
 
 @interface WebSocketProxy : NSObject
 
-- (instancetype)initWith:(NSString *)urlString delegate:(id<WebSocketProxyDelegate>)delegate;
+- (instancetype)initWith:(id<WebSocketProxyDelegate>)delegate;
 
-- (void)connect;
+- (void)connect:(NSString *)urlString;
+
+- (void)reconnect;
 
 @end

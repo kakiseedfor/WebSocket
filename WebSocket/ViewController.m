@@ -13,9 +13,12 @@
 
 #define WeakSelf __weak typeof(self) weakSelf = self;
 
+#pragma mark - CellModel
+
 @interface CellModel : NSObject
 @property (strong, nonatomic) NSString *text;
 @property (strong, nonatomic) NSString *filePath;
+@property (copy, nonatomic) void (^block)(void);
 @property (nonatomic) CGSize size;
 @property (nonatomic) BOOL client;
 
@@ -32,12 +35,13 @@
     return self;
 }
 
-- (instancetype)initWithText:(NSString *)text
+- (instancetype)initWithText:(NSString *)text client:(BOOL)client
 {
     self = [self init];
     if (self) {
         _text = text;
-        [self textSize];
+        _client = client;
+        _size = CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds) - 32.f, 64.f);
     }
     return self;
 }
@@ -52,13 +56,21 @@
     return self;
 }
 
-- (void)textSize{
+- (void)textSize:(void (^)(void))block{
+    _block = block;
+    
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         self.size = [self.text boundingRectWithSize:CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds) - 32.f, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:18.f]} context:nil].size;
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            !self.block ? : self.block();
+        });
     });
 }
 
 @end
+
+#pragma mark - TableViewCell
 
 @interface TableViewCell : UITableViewCell
 @property (strong, nonatomic) UILabel *text;
@@ -117,13 +129,18 @@
 
 @end
 
+#pragma mark - ViewController
+
 @interface ViewController ()<WebSocketDelegate, UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate>
 @property (strong, nonatomic) WebSocketManager *manager;
 @property (strong, nonatomic) NSMutableArray *dataSource;
+@property (strong, nonatomic) NSString *urlString;
+
 @property (strong, nonatomic) UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UIView *inputView;
 @property (weak, nonatomic) IBOutlet UIButton *optionBtn;
 @property (weak, nonatomic) IBOutlet UITextField *textField;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *operateItem;
 
 @end
 
@@ -138,6 +155,8 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     
+    self.navigationItem.title = @"Chat Room";
+    
     _dataSource = [NSMutableArray array];
     _manager = [[WebSocketManager alloc] initWith:self];
     
@@ -151,7 +170,8 @@
     }];
     
     [_inputView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.bottom.left.right.equalTo(self.view);
+        make.bottom.equalTo(self.mas_bottomLayoutGuideTop);
+        make.left.right.equalTo(self.view);
         make.height.mas_equalTo(48.f);
     }];
     
@@ -174,7 +194,7 @@
 
 - (void)keyboardWillShow:(NSNotification *)notification{
     CGRect keyboardRect = [notification.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
-    CGRect viewRect = [self.inputView convertRect:self.inputView.bounds toView:UIApplication.sharedApplication.keyWindow];
+    CGRect viewRect = [_inputView convertRect:_inputView.bounds toView:UIApplication.sharedApplication.keyWindow];
     
     [self keyboardAnimation:CGRectGetMinY(keyboardRect) - CGRectGetMaxY(viewRect)];
 }
@@ -185,11 +205,16 @@
 
 - (void)keyboardAnimation:(CGFloat)offset{
     [_inputView mas_updateConstraints:^(MASConstraintMaker *make) {
-        make.bottom.equalTo(self.view.mas_bottom).offset(offset);
+        make.bottom.equalTo(self.view.mas_bottom).offset(offset - self.view.safeAreaInsets.bottom);
     }];
     
     [UIView animateWithDuration:.25f animations:^{
         [self.view layoutIfNeeded];
+    } completion:^(BOOL finished) {
+        if (self.dataSource.count) {
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.dataSource.count - 1 inSection:0];
+            [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+        }
     }];
 }
 
@@ -197,6 +222,7 @@
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField{
     [self didSendText:textField.text];
+    textField.text = @"";
     
     [textField resignFirstResponder];
     return YES;
@@ -227,35 +253,39 @@
 
 #pragma mark - WebSocketDelegate
 
+- (void)didCloseWebSocket{
+    _operateItem.title = @"连接";
+    
+    CellModel *model = [[CellModel alloc] initWithText:@"Status Code Connection Close : 客户端" client:YES];
+    [self updateModel:model];
+}
+
 - (void)didConnectWebSocket{
-    NSLog(@"%s",__FUNCTION__);
+    _operateItem.title = @"断开";
+    
+    CellModel *model = [[CellModel alloc] initWithText:@"Connected WebSocket : 客户端" client:YES];
+    [self updateModel:model];
 }
 
 - (void)updateModel:(CellModel *)model{
-    [_dataSource addObject:model];
-    [_tableView reloadData];
-    
     WeakSelf;
     __weak typeof(model) weakModel = model;
-    [model.kvoController addObserver:self forKeyPath:@"size" options:NSKeyValueObservingOptionNew kvoCallBack:^(id context) {
-        [weakModel.kvoController removeObserver:self forKeyPath:@"size"];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[self.dataSource indexOfObject:weakModel] inSection:0];
-            [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-        });
+    [model textSize:^{
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[weakSelf.dataSource indexOfObject:weakModel] inSection:0];
+        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
     }];
+    [_dataSource addObject:model];
+    [_tableView reloadData];
 }
 
 - (void)didSendText:(NSString *)text{
-    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"%@ : 客户端",text]];
-    model.client = YES;
-    
+    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"%@ : 客户端",text] client:YES];
     [self updateModel:model];
     [_manager sendText:text];
 }
 
 - (void)didReceiveText:(NSString *)text{
-    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"服务端 : %@",text]];
+    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"服务端 : %@",text] client:NO];
     [self updateModel:model];
 }
 
@@ -267,8 +297,8 @@
 #pragma mark - Action
 
 - (IBAction)stopAction:(UIBarButtonItem *)sender {
-//    "wss://push.niugu99.com:9100/quotation?commodityId=*"
-    _manager.isConnected ? [_manager disConnect:@"Hello"] : [_manager connect:@"wss://echo.websocket.org"];
+    _operateItem.title = _manager.isConnected ? @"断开中..." : @"连接中...";
+    _manager.isConnected ? [_manager disConnect:@"Close WebSocket"] : [_manager connect:_urlString];
 }
 
 #pragma mark - Method
@@ -285,6 +315,50 @@
     }
     
     return _tableView;
+}
+
+@end
+
+#pragma mark - RootViewController
+
+@interface RootViewController : UIViewController<UITableViewDelegate, UITableViewDataSource>
+@property (strong, nonatomic) NSArray *dataSrouce;
+@property (weak, nonatomic) IBOutlet UITableView *tableView;
+
+@end
+
+@implementation RootViewController
+
+- (void)viewDidLoad{
+    [super viewDidLoad];
+    
+    self.navigationItem.title = @"Socket Lists";
+    
+    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*"];
+    [_tableView registerClass:UITableViewCell.class forCellReuseIdentifier:@"UITableViewCell"];
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return _dataSrouce.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"UITableViewCell" forIndexPath:indexPath];
+    cell.textLabel.text = _dataSrouce[indexPath.row];
+    
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:NSBundle.mainBundle];
+    ViewController *vc = [storyboard instantiateViewControllerWithIdentifier:@"ViewController"];
+    vc.urlString = _dataSrouce[indexPath.row];
+    
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 @end

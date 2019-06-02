@@ -9,6 +9,8 @@
 #import "WebSocketDeserialization.h"
 #import "WebSocketHeader.h"
 
+extern STATUS_CODE Code_Connection;
+
 @interface WebSocketDeserialization ()
 @property (weak, nonatomic) id<WebSoketProtocol> delegate;
 @property (nonatomic) dispatch_queue_t queue;
@@ -34,10 +36,11 @@
     return self;
 }
 
-- (void)receiveData:(dispatch_data_t)data{
+- (void)receiveData:(dispatch_data_t __strong*)tempData{
     dispatch_async(_queue, ^{
         [self.shareCondition lock];
         
+        dispatch_data_t data = *tempData;
         const uint8_t *bytes = ((NSData *)data).bytes;
         if (dispatch_data_get_size(data) < 2) {
             
@@ -45,16 +48,16 @@
             NSError *error = [NSError errorWithDomain:@"Status Code Protocol Error" code:Status_Code_Protocol_Error userInfo:nil];
             ![self.delegate respondsToSelector:@selector(finishDeserializeError:)] ? : [self.delegate finishDeserializeError:error];
         }else{
-            [self dealData:data];
+            [self dealData:tempData];
         }
         
         [self.shareCondition unlock];
     });
 }
 
-- (void)dealData:(dispatch_data_t)data{
+- (void)dealData:(dispatch_data_t __strong*)data{
     NSError *error = nil;
-    const uint8_t *bytes = ((NSData *)data).bytes;
+    const uint8_t *bytes = ((NSData *)*data).bytes;
     
     static OPCode opCode = Continue_OPCode; //用来区分数据类型
     BOOL control = ((bytes[0] & Close_OPCode) == Close_OPCode || (bytes[0] & Pong_OPCode) == Pong_OPCode || (bytes[0] & Ping_OPCode) == Ping_OPCode) && bytes[0] & FIN_FINAL_MASK;
@@ -67,11 +70,11 @@
         size_t extendLength = payload < PAY_LOAD_126 ? 0 : (payload == PAY_LOAD_126 ? sizeof(uint16_t) : sizeof(uint64_t));
         
         size_t header = sizeof(uint16_t) + extendLength + maskLength;
-        while (ShouldWhile() && dispatch_data_get_size(data) < header) {
+        while (self.isConnected && dispatch_data_get_size(*data) < header) {
             [self.shareCondition wait];
         }
         
-        if (!ShouldWhile()) {
+        if (!self.isConnected) {
             error = [NSError errorWithDomain:@"Status Code Connection Close" code:Status_Code_Connection_Close userInfo:nil];
             _buffer = dispatch_data_empty;
             ![self.delegate respondsToSelector:@selector(finishDeserializeError:)] ? : [self.delegate finishDeserializeError:error];
@@ -79,7 +82,7 @@
         }
         
         if (extendLength) {
-            dispatch_data_t subData = dispatch_data_create_subrange(data, sizeof(uint16_t), extendLength);
+            dispatch_data_t subData = dispatch_data_create_subrange(*data, sizeof(uint16_t), extendLength);
             const uint8_t *subBytes = ((NSData *)subData).bytes;
             
             uint64_t tempload = 0;
@@ -89,33 +92,30 @@
         
         uint8_t mask[maskLength];
         if (maskLength) {
-            dispatch_data_t subData = dispatch_data_create_subrange(data, header - maskLength, maskLength);
+            dispatch_data_t subData = dispatch_data_create_subrange(*data, header - maskLength, maskLength);
             const uint8_t *subBytes = ((NSData *)subData).bytes;
             memcpy(mask, subBytes, maskLength);
         }
         
-        data = dispatch_data_create_subrange(data, header, dispatch_data_get_size(data) - header);
-        while (ShouldWhile() && dispatch_data_get_size(data) < payload) {
+        *data = dispatch_data_create_subrange(*data, header, dispatch_data_get_size(*data) - header);
+        while (self.isConnected && dispatch_data_get_size(*data) < payload) {
             [self.shareCondition wait];
         }
         
-        if (!ShouldWhile()) {
+        if (!self.isConnected) {
             error = [NSError errorWithDomain:@"Status Code Connection Close" code:Status_Code_Connection_Close userInfo:nil];
             _buffer = dispatch_data_empty;
             ![self.delegate respondsToSelector:@selector(finishDeserializeError:)] ? : [self.delegate finishDeserializeError:error];
             return;
         }
         
-        dispatch_data_t payloadData = dispatch_data_create_subrange(data, 0, payload);
+        dispatch_data_t payloadData = dispatch_data_create_subrange(*data, 0, payload);
         payloadData == dispatch_data_empty || maskLength <= 0 ? : MaskByteWith((uint8_t *)((NSData *)payloadData).bytes, mask);
         
         _buffer = dispatch_data_create_concat(_buffer, payloadData);
         if (bytes[0] & FIN_FINAL_MASK) {
             if (control) {
-                OPCode controlCode = None_OPCode;
-                controlCode = bytes[0] & Close_OPCode;
-                controlCode = controlCode ? controlCode : bytes[0] & Ping_OPCode;
-                controlCode = controlCode ? controlCode : bytes[0] & Pong_OPCode;
+                OPCode controlCode = bytes[0] & None_OPCode;
                 
                 NSString *string = [[NSString alloc] initWithData:(NSData *)_buffer encoding:NSUTF8StringEncoding];
                 
@@ -149,8 +149,8 @@
             _buffer = dispatch_data_empty;
         }
         
-        if (dispatch_data_get_size(data) > payload) {
-            data = dispatch_data_create_subrange(data, payload, dispatch_data_get_size(data) - payload);
+        *data = dispatch_data_create_subrange(*data, payload, dispatch_data_get_size(*data) - payload);
+        if (dispatch_data_get_size(*data)) {
             [self receiveData:data];
         }
     }else{
@@ -163,6 +163,10 @@
 
 - (NSCondition *)shareCondition{
     return ShareCondition();
+}
+
+- (BOOL)isConnected{
+    return Code_Connection == Status_Code_Connection_Normal;
 }
 
 @end

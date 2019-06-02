@@ -22,8 +22,6 @@ NSCondition *ShareCondition(void);
 
 NSData *SHA1Data(NSString *input);
 
-BOOL ShouldWhile(void);
-
 void SendData(NSData *data, OPCode opCode, CallBack callBack);
 
 void MaskByteWith(uint8_t *byte, uint8_t *mask);
@@ -49,6 +47,8 @@ void MaskByteWith(uint8_t *byte, uint8_t *mask);
 @end
 
 @protocol WebSocketDelegate <NSObject>
+
+- (void)didCloseWebSocket;
 
 - (void)didConnectWebSocket;
 

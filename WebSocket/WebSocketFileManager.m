@@ -74,7 +74,7 @@ extern STATUS_CODE Code_Connection;
         
         dispatchData = dispatch_data_create_subrange(dispatchData, dispatch_data_get_size(subDispatchData), length - dispatch_data_get_size(subDispatchData));
         
-        if (ShouldWhile()) {
+        if (self.isConnected) {
             NSData *subData = SerializeData((NSData *)subDispatchData, opCode, _fileSize ? FIN_CONTINUE_MASK : FIN_FINAL_MASK);
             ![_delegate respondsToSelector:@selector(finishSerializeToSend:)] ? : [_delegate finishSerializeToSend:subData];
         }
@@ -83,23 +83,22 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)readData{
-    if (ShouldWhile()) { //网络连接不正常
-        [self closeStream];
-        return;
-    }
-    
-    while (_inputStream.hasBytesAvailable) {
-        uint8_t buffer[getpagesize()];
-        NSInteger length = [_inputStream read:buffer maxLength:getpagesize()];
-        
-        if (length) {
-            NSData *data = [NSData dataWithBytes:buffer length:length];
+    if (self.isConnected) {
+        while (_inputStream.hasBytesAvailable) {
+            uint8_t buffer[getpagesize()];
+            NSInteger length = [_inputStream read:buffer maxLength:getpagesize()];
             
-            dispatch_async(_dispatchQueue, ^{      //防止文本、图片发送的数据流紊乱
-                self.fileSize -= length;
-                [self sendData:data];
-            });
+            if (length) {
+                NSData *data = [NSData dataWithBytes:buffer length:length];
+                
+                dispatch_async(_dispatchQueue, ^{      //防止文本、图片发送的数据流紊乱
+                    self.fileSize -= length;
+                    [self sendData:data];
+                });
+            }
         }
+    }else{  //网络连接不正常
+        [self closeStream];
     }
 }
 
@@ -123,7 +122,7 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)notificationStatusCode:(NSNotification *)notification{
-    if (ShouldWhile()) {
+    if (self.isConnected) {
         [self openStream];
     }
 }
@@ -146,6 +145,10 @@ extern STATUS_CODE Code_Connection;
         default:
             break;
     }
+}
+
+- (BOOL)isConnected{
+    return Code_Connection == Status_Code_Connection_Normal;
 }
 
 @end

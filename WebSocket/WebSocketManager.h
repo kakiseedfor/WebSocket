@@ -19,8 +19,6 @@
 
 - (void)sendText:(NSString *)text;
 
-- (void)sendPing:(NSString *)text;
-
 - (void)sendFile:(NSString *)filePath;
 
 - (instancetype)initWith:(id<WebSocketDelegate>)delegate;

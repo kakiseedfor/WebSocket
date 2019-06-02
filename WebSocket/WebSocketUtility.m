@@ -9,18 +9,6 @@
 #import "WebSocketUtility.h"
 STATUS_CODE Code_Connection = Status_Code_Connection_Close;
 
-BOOL ShouldWhile(void){
-    BOOL stop = YES;
-    switch (Code_Connection) {
-        case Status_Code_Connection_Close:
-            stop = NO;
-            break;
-        default:
-            break;
-    }
-    return stop;
-}
-
 void MaskByteWith(uint8_t *byte, uint8_t *mask){
     size_t length = sizeof(byte) / sizeof(byte[0]);
     
@@ -70,7 +58,7 @@ void SendData(NSData *data, OPCode opCode, CallBack callBack){
         
         dispatchData = dispatch_data_create_subrange(dispatchData, dispatch_data_get_size(subDispatchData), length - dispatch_data_get_size(subDispatchData));
         dispatch_async(queue, ^{
-            if (ShouldWhile()) {
+            if (Code_Connection == Status_Code_Connection_Normal) {
                 NSData *subData = SerializeData((NSData *)subDispatchData, opCode, dispatchData == dispatch_data_empty ? FIN_FINAL_MASK : FIN_CONTINUE_MASK);
                 !callBack ? : callBack(subData);
             }
@@ -219,9 +207,8 @@ CFHTTPMessageRef ShakehandHeader(NSString *secWebSocketKey, NSURLRequest *reques
         CFRunLoopSourceRef sourceRef = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &context);
         CFRunLoopAddSource(_runLoop.getCFRunLoop, sourceRef, kCFRunLoopDefaultMode);
         
-        Code_Connection = Status_Code_Connection_Doing;
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, NSDate.distantFuture.timeIntervalSinceReferenceDate, false);
-        NSLog(@"what the shit");
+        NSLog(@"The Thread was stopped!");
     }
 }
 
