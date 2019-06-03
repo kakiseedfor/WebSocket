@@ -8,12 +8,14 @@
 
 #import "WebSocketProxy.h"
 #import "WebSocketManager.h"
+#import "WebSocketReachability.h"
 
 extern STATUS_CODE Code_Connection;
 
 @interface WebSocketManager ()<WebSoketProtocol, WebSocketProxyDelegate, NSStreamDelegate>
 @property (weak, nonatomic) id<WebSocketDelegate> delegate;
 @property (strong, nonatomic) WebSocketDeserialization *deserialization;
+@property (strong, nonatomic) WebSocketReachability *reachability;
 @property (strong, nonatomic) WebSocketFileManager *fileManager;
 @property (strong, nonatomic) WebSocketProxy *socketProxy;
 @property (strong, nonatomic) NSOutputStream *outputStream;
@@ -33,7 +35,6 @@ extern STATUS_CODE Code_Connection;
     NSLog(@"%s",__FUNCTION__);
     
     [self closeStream];
-    [NSNotificationCenter.defaultCenter removeObserver:self name:WebSocket_Notification_Status_Code_Change object:nil];
 }
 
 - (instancetype)initWith:(id<WebSocketDelegate>)delegate
@@ -49,8 +50,6 @@ extern STATUS_CODE Code_Connection;
         _socketProxy = [[WebSocketProxy alloc] initWith:self];
         _fileManager = [[WebSocketFileManager alloc] initWith:self];
         _deserialization = [[WebSocketDeserialization alloc] initWith:self];
-        
-        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(notificationStatusCode:) name:WebSocket_Notification_Status_Code_Change object:nil];
     }
     return self;
 }
@@ -60,7 +59,12 @@ extern STATUS_CODE Code_Connection;
 - (void)connect:(NSString *)urlString{
     if (Code_Connection == Status_Code_Connection_Close) {
         Code_Connection = Status_Code_Connection_Doing;
+        
+        _reachability = [WebSocketReachability reachabilityForInternetConnection];
+        [_reachability  startNotifier];
         [_socketProxy connect:urlString];
+        
+        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(notificationStatusCode:) name:kReachabilityChangedNotification object:nil];
     }
 }
 
@@ -81,11 +85,13 @@ extern STATUS_CODE Code_Connection;
     Code_Connection = Status_Code_Connection_Close;
     
     !_timer ? : dispatch_source_cancel(_timer);
+    [_reachability stopNotifier];
     [_fileManager closeStream];
     [_outputStream close];
     [_inputStream close];
     [_inputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
     [_outputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
+    [NSNotificationCenter.defaultCenter removeObserver:self name:kReachabilityChangedNotification object:nil];
     
     _heartbeat = 0;
     _inputStream = nil;
@@ -189,8 +195,15 @@ extern STATUS_CODE Code_Connection;
 #pragma mark - Notification
 
 - (void)notificationStatusCode:(NSNotification *)notification{
-    if (self.isConnected) {
-        [self reconnect];
+    switch (_reachability.currentReachabilityStatus) {
+        case NotReachable:{
+            NSError *error = [NSError errorWithDomain:@"The connection is invalid!" code:Status_Code_Connection_Invalid userInfo:@{}];
+            [self finishDeserializeError:error];
+        }
+            break;
+        default:
+            self.isConnected ? : [self reconnect];
+            break;
     }
 }
 
@@ -203,6 +216,11 @@ extern STATUS_CODE Code_Connection;
 
 - (void)finishDeserializeError:(NSError *)error{
     switch (error.code) {
+        case Status_Code_Connection_Invalid:{
+            [self closeStream];
+            ![_delegate respondsToSelector:@selector(connectionWithError:)] ? : [_delegate connectionWithError:error];
+        }
+            break;
         case Status_Code_Connection_Close:
         case Status_Code_Connection_Error:
             [self finishDeserializeString:@"" opCode:Close_OPCode];

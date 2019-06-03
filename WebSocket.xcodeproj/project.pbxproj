@@ -19,6 +19,8 @@
 		EC095B3622A0FE23001C2F5A /* MASViewAttribute.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B2C22A0FE23001C2F5A /* MASViewAttribute.m */; };
 		EC37073422A4B813005EFEB1 /* NSObject+KVOObject.m in Sources */ = {isa = PBXBuildFile; fileRef = EC37073022A4B812005EFEB1 /* NSObject+KVOObject.m */; };
 		EC37073522A4B813005EFEB1 /* KVOController.m in Sources */ = {isa = PBXBuildFile; fileRef = EC37073122A4B812005EFEB1 /* KVOController.m */; };
+		EC79538222A4F6E500CBC9BE /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC79538122A4F6E500CBC9BE /* SystemConfiguration.framework */; };
+		EC79538522A4F88200CBC9BE /* WebSocketReachability.m in Sources */ = {isa = PBXBuildFile; fileRef = EC79538422A4F88100CBC9BE /* WebSocketReachability.m */; };
 		ECAD1FEA2293DF5A00CB4C8F /* WebSocketManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ECAD1FE92293DF5A00CB4C8F /* WebSocketManager.m */; };
 		ECB9DB232294FD7F00E32EF5 /* WebSocketUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = ECB9DB222294FD7F00E32EF5 /* WebSocketUtility.m */; };
 		ECB9DB26229521F900E32EF5 /* WebSocketDeserialization.m in Sources */ = {isa = PBXBuildFile; fileRef = ECB9DB25229521F900E32EF5 /* WebSocketDeserialization.m */; };
@@ -63,6 +65,9 @@
 		EC37073122A4B812005EFEB1 /* KVOController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KVOController.m; path = WebSocket/KVOController.m; sourceTree = SOURCE_ROOT; };
 		EC37073222A4B813005EFEB1 /* KVOController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KVOController.h; path = WebSocket/KVOController.h; sourceTree = SOURCE_ROOT; };
 		EC37073322A4B813005EFEB1 /* NSObject+KVOObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSObject+KVOObject.h"; path = "WebSocket/NSObject+KVOObject.h"; sourceTree = SOURCE_ROOT; };
+		EC79538122A4F6E500CBC9BE /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		EC79538322A4F88100CBC9BE /* WebSocketReachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketReachability.h; sourceTree = "<group>"; };
+		EC79538422A4F88100CBC9BE /* WebSocketReachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketReachability.m; sourceTree = "<group>"; };
 		ECAD1FE722939E0400CB4C8F /* WebSocketHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocketHeader.h; sourceTree = "<group>"; };
 		ECAD1FE82293DF5A00CB4C8F /* WebSocketManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocketManager.h; sourceTree = "<group>"; };
 		ECAD1FE92293DF5A00CB4C8F /* WebSocketManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WebSocketManager.m; sourceTree = "<group>"; };
@@ -92,6 +97,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EC79538222A4F6E500CBC9BE /* SystemConfiguration.framework in Frameworks */,
 				ECB9DB34229E624C00E32EF5 /* CoreTelephony.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -145,6 +151,7 @@
 		ECB9DB32229E624C00E32EF5 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				EC79538122A4F6E500CBC9BE /* SystemConfiguration.framework */,
 				ECB9DB33229E624C00E32EF5 /* CoreTelephony.framework */,
 			);
 			name = Frameworks;
@@ -177,12 +184,14 @@
 				ECDDCB2E229258B6003B9BAE /* ViewController.h */,
 				ECDDCB2F229258B6003B9BAE /* ViewController.m */,
 				ECAD1FE722939E0400CB4C8F /* WebSocketHeader.h */,
-				ECB9DB2F229E5C8000E32EF5 /* WebSocketProxy.h */,
-				ECB9DB30229E5C8000E32EF5 /* WebSocketProxy.m */,
 				ECB9DB212294FD7F00E32EF5 /* WebSocketUtility.h */,
 				ECB9DB222294FD7F00E32EF5 /* WebSocketUtility.m */,
+				ECB9DB2F229E5C8000E32EF5 /* WebSocketProxy.h */,
+				ECB9DB30229E5C8000E32EF5 /* WebSocketProxy.m */,
 				ECAD1FE82293DF5A00CB4C8F /* WebSocketManager.h */,
 				ECAD1FE92293DF5A00CB4C8F /* WebSocketManager.m */,
+				EC79538322A4F88100CBC9BE /* WebSocketReachability.h */,
+				EC79538422A4F88100CBC9BE /* WebSocketReachability.m */,
 				ECB9DB27229792B900E32EF5 /* WebSocketFileManager.h */,
 				ECB9DB28229792B900E32EF5 /* WebSocketFileManager.m */,
 				ECB9DB24229521F900E32EF5 /* WebSocketDeserialization.h */,
@@ -279,6 +288,7 @@
 				EC095B3122A0FE23001C2F5A /* MASLayoutConstraint.m in Sources */,
 				EC095B3022A0FE23001C2F5A /* MASConstraintMaker.m in Sources */,
 				ECB9DB29229792B900E32EF5 /* WebSocketFileManager.m in Sources */,
+				EC79538522A4F88200CBC9BE /* WebSocketReachability.m in Sources */,
 				ECDDCB30229258B6003B9BAE /* ViewController.m in Sources */,
 				ECB9DB31229E5C8000E32EF5 /* WebSocketProxy.m in Sources */,
 				EC095B3222A0FE23001C2F5A /* NSArray+MASAdditions.m in Sources */,

@@ -22,6 +22,8 @@ NSCondition *ShareCondition(void);
 
 NSData *SHA1Data(NSString *input);
 
+NSString *OriginUrl(NSURL *url);
+
 void SendData(NSData *data, OPCode opCode, CallBack callBack);
 
 void MaskByteWith(uint8_t *byte, uint8_t *mask);
@@ -55,6 +57,8 @@ void MaskByteWith(uint8_t *byte, uint8_t *mask);
 - (void)didReceiveText:(NSString *)text;
 
 - (void)didReceiveFile:(NSString *)filePath;
+
+- (void)connectionWithError:(NSError *)error;
 
 @end
 

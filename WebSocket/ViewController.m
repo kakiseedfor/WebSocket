@@ -60,7 +60,11 @@
     _block = block;
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        self.size = [self.text boundingRectWithSize:CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds) - 32.f, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:18.f]} context:nil].size;
+        NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+        paragraphStyle.lineSpacing = 0.1f;
+        paragraphStyle.alignment = NSTextAlignmentJustified;
+        
+        self.size = [self.text boundingRectWithSize:CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds) - 32.f, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName : [UIFont systemFontOfSize:18.f], NSParagraphStyleAttributeName : paragraphStyle} context:nil].size;
         
         dispatch_async(dispatch_get_main_queue(), ^{
             !self.block ? : self.block();
@@ -109,7 +113,7 @@
 - (UILabel *)text{
     if (!_text) {
         UILabel *temp = [[UILabel alloc] init];
-        temp.font = [UIFont systemFontOfSize:16.f];
+        temp.font = [UIFont systemFontOfSize:18.f];
         temp.numberOfLines = 0;
         _text = temp;
     }
@@ -196,7 +200,8 @@
     CGRect keyboardRect = [notification.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
     CGRect viewRect = [_inputView convertRect:_inputView.bounds toView:UIApplication.sharedApplication.keyWindow];
     
-    [self keyboardAnimation:CGRectGetMinY(keyboardRect) - CGRectGetMaxY(viewRect)];
+    CGFloat offset = CGRectGetMinY(keyboardRect) - CGRectGetMaxY(viewRect);
+    !(offset < 0) ? : [self keyboardAnimation:offset];
 }
 
 - (void)keyboardWillHide:(NSNotification *)notification{
@@ -265,6 +270,22 @@
     
     CellModel *model = [[CellModel alloc] initWithText:@"Connected WebSocket : 客户端" client:YES];
     [self updateModel:model];
+}
+
+- (void)connectionWithError:(NSError *)error{
+    _operateItem.title = @"连接";
+    
+    UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"提示" message:error.domain preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *cancleAction = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+    }];
+    UIAlertAction *confirmAction = [UIAlertAction actionWithTitle:@"重新连接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [self stopAction:self.operateItem];
+    }];
+    [alertVC addAction:cancleAction];
+    [alertVC addAction:confirmAction];
+    
+    [self presentViewController:alertVC animated:YES completion:^{
+    }];
 }
 
 - (void)updateModel:(CellModel *)model{

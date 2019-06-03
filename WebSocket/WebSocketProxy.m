@@ -224,8 +224,11 @@ extern STATUS_CODE Code_Connection;
             _trust = self.isSecurity ? (_trust ? _trust : [self checkSecurity:aStream]) : YES;
             _trust ? [self sendShakehandHeader] : [self closeStream];
             break;
-        case NSStreamEventErrorOccurred:
+        case NSStreamEventErrorOccurred:{
+            NSError *error = [NSError errorWithDomain:@"Connection occur error!" code:Status_Code_Connection_Error userInfo:@{}];
+            ![self.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [self.delegate didConnect:self.inputStream outputStream:self.outputStream error:error];
             [self closeStream];
+        }
             break;
         default:
             break;

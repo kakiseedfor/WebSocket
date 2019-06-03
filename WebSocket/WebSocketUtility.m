@@ -217,6 +217,7 @@ CFHTTPMessageRef ShakehandHeader(NSString *secWebSocketKey, NSURLRequest *reques
         };
         CFRunLoopSourceRef sourceRef = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &context);
         CFRunLoopAddSource(_runLoop.getCFRunLoop, sourceRef, kCFRunLoopDefaultMode);
+        CFRelease(sourceRef);
         
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, NSDate.distantFuture.timeIntervalSinceReferenceDate, false);
         NSLog(@"The Thread was stopped!");
