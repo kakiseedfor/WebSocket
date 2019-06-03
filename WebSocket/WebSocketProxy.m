@@ -58,8 +58,6 @@ extern STATUS_CODE Code_Connection;
                 break;
         }
     };
-    
-    [self startConnect];
 }
 
 - (void)reconnect{

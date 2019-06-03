@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		EC095B1122A0D944001C2F5A /* NSObject+KVOObject.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B0D22A0D943001C2F5A /* NSObject+KVOObject.m */; };
-		EC095B1222A0D944001C2F5A /* KVOController.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B0E22A0D943001C2F5A /* KVOController.m */; };
 		EC095B2D22A0FE23001C2F5A /* NSLayoutConstraint+MASDebugAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B1522A0FE23001C2F5A /* NSLayoutConstraint+MASDebugAdditions.m */; };
 		EC095B2E22A0FE23001C2F5A /* ViewController+MASAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B1E22A0FE23001C2F5A /* ViewController+MASAdditions.m */; };
 		EC095B2F22A0FE23001C2F5A /* MASCompositeConstraint.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B2222A0FE23001C2F5A /* MASCompositeConstraint.m */; };
@@ -19,6 +17,8 @@
 		EC095B3422A0FE23001C2F5A /* MASConstraint.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B2922A0FE23001C2F5A /* MASConstraint.m */; };
 		EC095B3522A0FE23001C2F5A /* MASViewConstraint.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B2B22A0FE23001C2F5A /* MASViewConstraint.m */; };
 		EC095B3622A0FE23001C2F5A /* MASViewAttribute.m in Sources */ = {isa = PBXBuildFile; fileRef = EC095B2C22A0FE23001C2F5A /* MASViewAttribute.m */; };
+		EC37073422A4B813005EFEB1 /* NSObject+KVOObject.m in Sources */ = {isa = PBXBuildFile; fileRef = EC37073022A4B812005EFEB1 /* NSObject+KVOObject.m */; };
+		EC37073522A4B813005EFEB1 /* KVOController.m in Sources */ = {isa = PBXBuildFile; fileRef = EC37073122A4B812005EFEB1 /* KVOController.m */; };
 		ECAD1FEA2293DF5A00CB4C8F /* WebSocketManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ECAD1FE92293DF5A00CB4C8F /* WebSocketManager.m */; };
 		ECB9DB232294FD7F00E32EF5 /* WebSocketUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = ECB9DB222294FD7F00E32EF5 /* WebSocketUtility.m */; };
 		ECB9DB26229521F900E32EF5 /* WebSocketDeserialization.m in Sources */ = {isa = PBXBuildFile; fileRef = ECB9DB25229521F900E32EF5 /* WebSocketDeserialization.m */; };
@@ -34,10 +34,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		EC095B0D22A0D943001C2F5A /* NSObject+KVOObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSObject+KVOObject.m"; path = "WebSocket/NSObject+KVOObject.m"; sourceTree = SOURCE_ROOT; };
-		EC095B0E22A0D943001C2F5A /* KVOController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KVOController.m; path = WebSocket/KVOController.m; sourceTree = SOURCE_ROOT; };
-		EC095B0F22A0D943001C2F5A /* KVOController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KVOController.h; path = WebSocket/KVOController.h; sourceTree = SOURCE_ROOT; };
-		EC095B1022A0D943001C2F5A /* NSObject+KVOObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSObject+KVOObject.h"; path = "WebSocket/NSObject+KVOObject.h"; sourceTree = SOURCE_ROOT; };
 		EC095B1422A0FE23001C2F5A /* MASCompositeConstraint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MASCompositeConstraint.h; sourceTree = "<group>"; };
 		EC095B1522A0FE23001C2F5A /* NSLayoutConstraint+MASDebugAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSLayoutConstraint+MASDebugAdditions.m"; sourceTree = "<group>"; };
 		EC095B1622A0FE23001C2F5A /* MASConstraint+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MASConstraint+Private.h"; sourceTree = "<group>"; };
@@ -63,6 +59,10 @@
 		EC095B2A22A0FE23001C2F5A /* ViewController+MASAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ViewController+MASAdditions.h"; sourceTree = "<group>"; };
 		EC095B2B22A0FE23001C2F5A /* MASViewConstraint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MASViewConstraint.m; sourceTree = "<group>"; };
 		EC095B2C22A0FE23001C2F5A /* MASViewAttribute.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MASViewAttribute.m; sourceTree = "<group>"; };
+		EC37073022A4B812005EFEB1 /* NSObject+KVOObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSObject+KVOObject.m"; path = "WebSocket/NSObject+KVOObject.m"; sourceTree = SOURCE_ROOT; };
+		EC37073122A4B812005EFEB1 /* KVOController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KVOController.m; path = WebSocket/KVOController.m; sourceTree = SOURCE_ROOT; };
+		EC37073222A4B813005EFEB1 /* KVOController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KVOController.h; path = WebSocket/KVOController.h; sourceTree = SOURCE_ROOT; };
+		EC37073322A4B813005EFEB1 /* NSObject+KVOObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSObject+KVOObject.h"; path = "WebSocket/NSObject+KVOObject.h"; sourceTree = SOURCE_ROOT; };
 		ECAD1FE722939E0400CB4C8F /* WebSocketHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocketHeader.h; sourceTree = "<group>"; };
 		ECAD1FE82293DF5A00CB4C8F /* WebSocketManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocketManager.h; sourceTree = "<group>"; };
 		ECAD1FE92293DF5A00CB4C8F /* WebSocketManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WebSocketManager.m; sourceTree = "<group>"; };
@@ -99,17 +99,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		EC095B0C22A0D935001C2F5A /* KVO */ = {
-			isa = PBXGroup;
-			children = (
-				EC095B0F22A0D943001C2F5A /* KVOController.h */,
-				EC095B0E22A0D943001C2F5A /* KVOController.m */,
-				EC095B1022A0D943001C2F5A /* NSObject+KVOObject.h */,
-				EC095B0D22A0D943001C2F5A /* NSObject+KVOObject.m */,
-			);
-			path = KVO;
-			sourceTree = "<group>";
-		};
 		EC095B1322A0FE23001C2F5A /* Masonry */ = {
 			isa = PBXGroup;
 			children = (
@@ -142,6 +131,17 @@
 			path = Masonry;
 			sourceTree = "<group>";
 		};
+		EC37072F22A4B808005EFEB1 /* KVO */ = {
+			isa = PBXGroup;
+			children = (
+				EC37073222A4B813005EFEB1 /* KVOController.h */,
+				EC37073122A4B812005EFEB1 /* KVOController.m */,
+				EC37073322A4B813005EFEB1 /* NSObject+KVOObject.h */,
+				EC37073022A4B812005EFEB1 /* NSObject+KVOObject.m */,
+			);
+			path = KVO;
+			sourceTree = "<group>";
+		};
 		ECB9DB32229E624C00E32EF5 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -170,8 +170,8 @@
 		ECDDCB2A229258B6003B9BAE /* WebSocket */ = {
 			isa = PBXGroup;
 			children = (
+				EC37072F22A4B808005EFEB1 /* KVO */,
 				EC095B1322A0FE23001C2F5A /* Masonry */,
-				EC095B0C22A0D935001C2F5A /* KVO */,
 				ECDDCB2B229258B6003B9BAE /* AppDelegate.h */,
 				ECDDCB2C229258B6003B9BAE /* AppDelegate.m */,
 				ECDDCB2E229258B6003B9BAE /* ViewController.h */,
@@ -267,15 +267,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				EC095B2D22A0FE23001C2F5A /* NSLayoutConstraint+MASDebugAdditions.m in Sources */,
-				EC095B1122A0D944001C2F5A /* NSObject+KVOObject.m in Sources */,
 				EC095B3422A0FE23001C2F5A /* MASConstraint.m in Sources */,
+				EC37073522A4B813005EFEB1 /* KVOController.m in Sources */,
 				EC095B3522A0FE23001C2F5A /* MASViewConstraint.m in Sources */,
 				EC095B2E22A0FE23001C2F5A /* ViewController+MASAdditions.m in Sources */,
 				EC095B3622A0FE23001C2F5A /* MASViewAttribute.m in Sources */,
 				ECAD1FEA2293DF5A00CB4C8F /* WebSocketManager.m in Sources */,
 				EC095B2F22A0FE23001C2F5A /* MASCompositeConstraint.m in Sources */,
 				EC095B3322A0FE23001C2F5A /* View+MASAdditions.m in Sources */,
-				EC095B1222A0D944001C2F5A /* KVOController.m in Sources */,
 				ECB9DB232294FD7F00E32EF5 /* WebSocketUtility.m in Sources */,
 				EC095B3122A0FE23001C2F5A /* MASLayoutConstraint.m in Sources */,
 				EC095B3022A0FE23001C2F5A /* MASConstraintMaker.m in Sources */,
@@ -285,6 +284,7 @@
 				EC095B3222A0FE23001C2F5A /* NSArray+MASAdditions.m in Sources */,
 				ECB9DB26229521F900E32EF5 /* WebSocketDeserialization.m in Sources */,
 				ECDDCB3B229258B7003B9BAE /* main.m in Sources */,
+				EC37073422A4B813005EFEB1 /* NSObject+KVOObject.m in Sources */,
 				ECDDCB2D229258B6003B9BAE /* AppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
