@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "WebSocketReachability.h"
 #import "WebSocketDeserialization.h"
 
 @interface WebSocketFileManager : NSObject

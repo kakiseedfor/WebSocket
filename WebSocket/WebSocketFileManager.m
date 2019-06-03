@@ -25,6 +25,7 @@ extern STATUS_CODE Code_Connection;
 - (void)dealloc{
     NSLog(@"%s",__FUNCTION__);
     
+    [self closeStream];
     [NSNotificationCenter.defaultCenter removeObserver:self name:WebSocket_Notification_Status_Code_Change object:nil];
 }
 
@@ -37,7 +38,7 @@ extern STATUS_CODE Code_Connection;
         _dispatchQueue = dispatch_queue_create("WebSocket.InputStream", DISPATCH_QUEUE_SERIAL);
         
         dispatch_set_target_queue(_dispatchQueue, ShareTargetQueue());
-        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(notificationStatusCode:) name:WebSocket_Notification_Status_Code_Change object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(notificationStatusCode:) name:kReachabilityChangedNotification object:nil];
     }
     return self;
 }
@@ -59,7 +60,9 @@ extern STATUS_CODE Code_Connection;
             _fileSize = [dic[NSFileSize] unsignedLongLongValue];
             _inputStream = [NSInputStream inputStreamWithFileAtPath:filePath];
             _inputStream.delegate = self;
-            [self openStream];
+            [_inputStream scheduleInRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
+            [_inputStream open];
+            
             [_filePaths removeObject:filePath];
         }
     }
@@ -102,14 +105,10 @@ extern STATUS_CODE Code_Connection;
     }
 }
 
-- (void)openStream{
-    [_inputStream scheduleInRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
-    [_inputStream open];
-}
-
 - (void)closeStream{
     [_inputStream close];
     [_inputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
+    [NSNotificationCenter.defaultCenter removeObserver:self name:kReachabilityChangedNotification object:nil];
 }
 
 - (void)destroyStream{
@@ -122,8 +121,14 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)notificationStatusCode:(NSNotification *)notification{
-    if (self.isConnected) {
-        [self openStream];
+    WebSocketReachability *reachability = notification.object;
+    switch (reachability.currentReachabilityStatus) {
+        case ReachableViaWiFi:
+        case ReachableViaWWAN:
+            
+            break;
+        default:
+            break;
     }
 }
 
@@ -134,7 +139,7 @@ extern STATUS_CODE Code_Connection;
             break;
         case NSStreamEventEndEncountered:{
             [self destroyStream];
-            dispatch_async(_dispatchQueue, ^{
+            dispatch_async(_dispatchQueue, ^{   //确保前一张图片读取完并发送完毕
                 [self startReading];
             });
         }
@@ -165,6 +170,7 @@ extern STATUS_CODE Code_Connection;
 
 - (void)dealloc
 {
+    [self closeStream];
     NSLog(@"%s",__FUNCTION__);
 }
 

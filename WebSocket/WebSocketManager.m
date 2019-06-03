@@ -8,7 +8,6 @@
 
 #import "WebSocketProxy.h"
 #import "WebSocketManager.h"
-#import "WebSocketReachability.h"
 
 extern STATUS_CODE Code_Connection;
 
