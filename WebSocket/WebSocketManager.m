@@ -23,6 +23,7 @@ extern STATUS_CODE Code_Connection;
 @property (nonatomic) dispatch_data_t writeDispatchData;
 @property (nonatomic) dispatch_data_t readDispatchData;
 @property (nonatomic) dispatch_source_t timer;
+@property (nonatomic) NSInteger heartbeat;
 
 @end
 
@@ -40,6 +41,7 @@ extern STATUS_CODE Code_Connection;
     self = [super init];
     if (self) {
         _delegate = delegate;
+        _heartbeat = 0;
         _readDispatchData = dispatch_data_empty;
         _writeDispatchData = dispatch_data_empty;
         _readQueue = dispatch_queue_create("WebSocketManager.Read.Queue", DISPATCH_QUEUE_SERIAL);
@@ -84,6 +86,8 @@ extern STATUS_CODE Code_Connection;
     [_inputStream close];
     [_inputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
     [_outputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
+    
+    _heartbeat = 0;
     _inputStream = nil;
     _outputStream = nil;
     _readDispatchData = dispatch_data_empty;
@@ -110,8 +114,18 @@ extern STATUS_CODE Code_Connection;
         
         WSSeakSelf;
         dispatch_source_set_event_handler(_timer, ^{
-            SendData([text dataUsingEncoding:NSUTF8StringEncoding], Ping_OPCode, ^(NSData *data) {
-                [wsseakSelf finishSerializeToSend:data];
+            NSError *error = nil;
+            if (wsseakSelf.heartbeat < 3) { //心跳包连续超时超过3次，即视为服务端端开链接
+                SendData([text dataUsingEncoding:NSUTF8StringEncoding], Ping_OPCode, ^(NSData *data) {
+                    [wsseakSelf finishSerializeToSend:data];
+                });
+            }else{
+                error = [NSError errorWithDomain:@"The Service has not response Ping Code!" code:Status_Code_Connection_Error userInfo:@{}];
+                [wsseakSelf finishDeserializeError:error];
+            }
+            
+            error ? : dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{  //心跳包超过3秒即为超时
+                wsseakSelf.heartbeat++;
             });
         });
         dispatch_resume(_timer);
@@ -210,7 +224,7 @@ extern STATUS_CODE Code_Connection;
 - (void)finishDeserializeString:(NSString *)text opCode:(OPCode)opCode{
     switch (opCode) {
         case Pong_OPCode:
-            NSLog(@"Receive Pong!");
+            _heartbeat--;
             break;
         case Ping_OPCode:
             NSLog(@"Response Ping!");

@@ -81,7 +81,7 @@ extern STATUS_CODE Code_Connection;
     }
     
     [self initialStream];
-    [self countdown];
+    [self countdown];   //连接超时处理
 }
 
 - (void)countdown{
@@ -159,7 +159,7 @@ extern STATUS_CODE Code_Connection;
         NSInteger length = [self.outputStream write:data.bytes maxLength:data.length];
         if (length < data.length) {
             [self closeStream];
-            NSError *error = [NSError errorWithDomain:@"Occur error when sending ShakehandHeader" code:-1 userInfo:@{}];
+            NSError *error = [NSError errorWithDomain:@"Occur error when sending ShakehandHeader" code:Status_Code_Connection_Error userInfo:@{}];
             ![self.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [self.delegate didConnect:self.inputStream outputStream:self.outputStream error:error];
         }
     }
@@ -177,7 +177,7 @@ extern STATUS_CODE Code_Connection;
         CFHTTPMessageAppendBytes(messageRef, data.bytes, data.length);
         
         CFIndex statusCode = CFHTTPMessageGetResponseStatusCode(messageRef);
-        NSError *error = statusCode < 400 ? nil : [NSError errorWithDomain:[NSString stringWithFormat:@"Request failed with response code %ld",(long)statusCode] code:-1 userInfo:@{}];
+        NSError *error = statusCode < 400 ? nil : [NSError errorWithDomain:[NSString stringWithFormat:@"Request failed with response code %ld",(long)statusCode] code:Status_Code_Connection_Error userInfo:@{}];
         
         if (!error) {
             NSString *accept = (__bridge NSString *)(CFHTTPMessageCopyHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Accept")));
@@ -187,12 +187,12 @@ extern STATUS_CODE Code_Connection;
             
             NSString *SHA1 = [SHA1Data(securityKey) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
             if (![accept isEqualToString:SHA1]) {
-                error = [NSError errorWithDomain:@"Verify Sec-WebSocket-Key failed!" code:-1 userInfo:@{}];
+                error = [NSError errorWithDomain:@"Verify Sec-WebSocket-Key failed!" code:Status_Code_Connection_Error userInfo:@{}];
             }
             
             NSString *protocol = (__bridge NSString *)(CFHTTPMessageCopyHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Protocol")));
             if (!error && protocol.length) {
-                error = [NSError errorWithDomain:@"The Sec-WebSocket-Protocol has not setted!" code:-1 userInfo:@{}];
+                error = [NSError errorWithDomain:@"The Sec-WebSocket-Protocol has not setted!" code:Status_Code_Connection_Error userInfo:@{}];
             }
         }
         
