@@ -20,6 +20,8 @@ extern STATUS_CODE Code_Connection;
 @property (strong, nonatomic) NSURLRequest *request;
 @property (strong, nonatomic) NSString *securityKey;
 @property (strong, nonatomic) NSURL *url;
+
+@property (nonatomic) dispatch_source_t timer;
 @property (nonatomic) BOOL sendHeader;
 @property (nonatomic) BOOL trust;
 
@@ -58,6 +60,8 @@ extern STATUS_CODE Code_Connection;
                 break;
         }
     };
+    
+    [self startConnect];
 }
 
 - (void)reconnect{
@@ -77,17 +81,23 @@ extern STATUS_CODE Code_Connection;
     }
     
     [self initialStream];
+    [self countdown];
+}
+
+- (void)countdown{
+    _timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+    dispatch_source_set_timer(_timer, dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC), NSEC_PER_SEC, 0);
     
     WSSeakSelf;
-    dispatch_time_t dispatchTime = dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC);
-    dispatch_after(dispatchTime, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    dispatch_source_set_event_handler(_timer, ^{
         if (Code_Connection != Status_Code_Connection_Normal) {
             [wsseakSelf closeStream];
-
+            
             NSError *error = [NSError errorWithDomain:@"The connection is timeout!" code:Status_Code_Connection_Error userInfo:@{}];
             ![wsseakSelf.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [wsseakSelf.delegate didConnect:wsseakSelf.inputStream outputStream:wsseakSelf.outputStream error:error];
         }
     });
+    dispatch_resume(_timer);
 }
 
 - (void)initialStream{
@@ -125,6 +135,8 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)resetStream{
+    dispatch_source_cancel(_timer);
+    
     _trust = NO;
     _sendHeader = NO;
     _headerData = nil;

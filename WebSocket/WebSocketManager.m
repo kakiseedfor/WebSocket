@@ -188,8 +188,13 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)finishDeserializeError:(NSError *)error{
-    if (error.code == Status_Code_Connection_Close) {
-        [self finishDeserializeString:@"" opCode:Close_OPCode];
+    switch (error.code) {
+        case Status_Code_Connection_Close:
+        case Status_Code_Connection_Error:
+            [self finishDeserializeString:@"" opCode:Close_OPCode];
+            break;
+        default:
+            break;
     }
     NSLog(@"%@",error.domain);
 }

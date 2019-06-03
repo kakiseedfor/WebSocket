@@ -7,10 +7,21 @@
 //
 
 #import "WebSocketUtility.h"
+
 STATUS_CODE Code_Connection = Status_Code_Connection_Close;
 
+size_t ArrayLength(uint8_t *byte){
+    size_t length = 0;
+    while (*byte) {
+        byte++;
+        length++;
+    }
+    
+    return length;
+}
+
 void MaskByteWith(uint8_t *byte, uint8_t *mask){
-    size_t length = sizeof(byte) / sizeof(byte[0]);
+    size_t length = ArrayLength(byte);
     
     for (size_t i = 0; i < length; i++) {
         byte[i] = byte[i] ^ mask[i % sizeof(uint32_t)];
