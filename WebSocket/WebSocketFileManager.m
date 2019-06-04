@@ -17,6 +17,7 @@ extern STATUS_CODE Code_Connection;
 @property (nonatomic) unsigned long long fileSize;
 @property (nonatomic) dispatch_queue_t dispatchQueue;
 @property (nonatomic) NSInteger readSize;
+@property (nonatomic) OPCode opCode;
 
 @end
 
@@ -58,6 +59,7 @@ extern STATUS_CODE Code_Connection;
         
         NSDictionary *dic = [NSFileManager.defaultManager attributesOfItemAtPath:filePath error:&error];
         if (!error) {
+            _opCode = BinaryFrame_OPCode;
             _fileSize = [dic[NSFileSize] unsignedLongLongValue];
             _inputStream = [NSInputStream inputStreamWithFileAtPath:filePath];
             _inputStream.delegate = self;
@@ -67,20 +69,22 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)sendData:(NSData *)data{
-    OPCode opCode = BinaryFrame_OPCode;
     dispatch_data_t dispatchData = dispatch_data_create(data.bytes, data.length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
     do {
         size_t length = dispatch_data_get_size(dispatchData);
         dispatch_data_t subDispatchData = dispatch_data_create_subrange(dispatchData, 0, length > fragment ? fragment : length);
         
-        dispatchData = dispatch_data_create_subrange(dispatchData, dispatch_data_get_size(subDispatchData), length - dispatch_data_get_size(subDispatchData));
-        
+        size_t subLength = dispatch_data_get_size(subDispatchData);
         if (self.isConnected) {
-            NSData *subData = SerializeData((NSData *)subDispatchData, opCode, _fileSize ? FIN_CONTINUE_MASK : FIN_FINAL_MASK);
+            _fileSize -= subLength;
+            NSData *subData = SerializeData((NSData *)subDispatchData, _opCode, _fileSize ? FIN_CONTINUE_MASK : FIN_FINAL_MASK);
             ![_delegate respondsToSelector:@selector(finishSerializeToSend:)] ? : [_delegate finishSerializeToSend:subData];
         }
-        opCode = Continue_OPCode;
-    } while (dispatchData != dispatch_data_empty);
+        
+        dispatchData = dispatch_data_create_subrange(dispatchData, subLength, length - subLength);
+        
+        _opCode = Continue_OPCode;
+    } while (dispatch_data_get_size(dispatchData));
 }
 
 - (void)readData{
@@ -94,7 +98,6 @@ extern STATUS_CODE Code_Connection;
             NSData *data = [NSData dataWithBytes:buffer length:length];
             
             dispatch_async(_dispatchQueue, ^{      //防止文本、图片发送的数据流紊乱
-                self.fileSize -= length;
                 [self sendData:data];
             });
         }
@@ -184,7 +187,7 @@ extern STATUS_CODE Code_Connection;
 - (void)writeData:(NSData *)data isFinish:(BOOL)isFinish{
     NSInteger length = [self.outputStream write:data.bytes maxLength:data.length];
     !(length < data.length) ? : [self closeStream];
-    
+
     if (isFinish) {
         [self closeStream];
         ![_delegate respondsToSelector:@selector(finishDeserializeFile:)] ? : [_delegate finishDeserializeFile:_outputPath];
@@ -196,8 +199,8 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)closeStream{
-    [self.outputStream close];
-    [self.outputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
+    [_outputStream close];
+    [_outputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
     
     _outputStream = nil;
     _outputPath = nil;
@@ -212,6 +215,7 @@ extern STATUS_CODE Code_Connection;
         [NSFileManager.defaultManager createDirectoryAtPath:filePath withIntermediateDirectories:YES attributes:nil error:&error];
         !error ? : NSLog(@"%@",error.domain);
     }
+    NSLog(@"%@",filePath);
     
     return filePath;
 }

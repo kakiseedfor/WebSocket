@@ -52,7 +52,7 @@ typedef NS_ENUM(NSInteger, STATUS_CODE) {
 };
 
 static int64_t timeout = 10; //连接超时时间
-static size_t fragment = 0x4000;    //分片阀值
+static size_t fragment = 0x400;    //分片阀值
 static NSString *WebSocket_Notification_Status_Code_Change = @"WebSocket_Notification_Status_Code_Change";
 
 #endif /* WebSocketHeader_h */

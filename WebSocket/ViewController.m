@@ -291,8 +291,9 @@
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
-    NSLog(@"%@",info);
-    [self imagePickerControllerDidCancel:picker];
+    NSURL *url = info[@"UIImagePickerControllerImageURL"];
+    [_manager sendFile:url.relativePath];
+//    [self imagePickerControllerDidCancel:picker];
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker{
