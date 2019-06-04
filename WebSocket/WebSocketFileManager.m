@@ -26,7 +26,7 @@ extern STATUS_CODE Code_Connection;
     NSLog(@"%s",__FUNCTION__);
     
     [self closeStream];
-    [NSNotificationCenter.defaultCenter removeObserver:self name:WebSocket_Notification_Status_Code_Change object:nil];
+    [NSNotificationCenter.defaultCenter removeObserver:self name:kReachabilityChangedNotification object:nil];
 }
 
 - (instancetype)initWith:(id<WebSoketProtocol>)delegate
@@ -54,16 +54,14 @@ extern STATUS_CODE Code_Connection;
     if (!_inputStream) {
         NSError *error = nil;
         NSString *filePath = _filePaths.firstObject;
-        NSDictionary *dic = [NSFileManager.defaultManager attributesOfItemAtPath:filePath error:&error];
+        [_filePaths removeObject:filePath];
         
+        NSDictionary *dic = [NSFileManager.defaultManager attributesOfItemAtPath:filePath error:&error];
         if (!error) {
             _fileSize = [dic[NSFileSize] unsignedLongLongValue];
             _inputStream = [NSInputStream inputStreamWithFileAtPath:filePath];
             _inputStream.delegate = self;
-            [_inputStream scheduleInRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
-            [_inputStream open];
-            
-            [_filePaths removeObject:filePath];
+            [self openStream];
         }
     }
 }
@@ -86,33 +84,31 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)readData{
-    if (self.isConnected) {
-        while (_inputStream.hasBytesAvailable) {
-            uint8_t buffer[getpagesize()];
-            NSInteger length = [_inputStream read:buffer maxLength:getpagesize()];
+    self.isConnected ? : [self closeStream];    //断开Socket连接情况下，直接关闭流接口[此时应该未有数据被读取]
+    
+    while (_inputStream.hasBytesAvailable) {
+        uint8_t buffer[getpagesize()];
+        NSInteger length = [_inputStream read:buffer maxLength:getpagesize()];
+        
+        if (length) {
+            NSData *data = [NSData dataWithBytes:buffer length:length];
             
-            if (length) {
-                NSData *data = [NSData dataWithBytes:buffer length:length];
-                
-                dispatch_async(_dispatchQueue, ^{      //防止文本、图片发送的数据流紊乱
-                    self.fileSize -= length;
-                    [self sendData:data];
-                });
-            }
+            dispatch_async(_dispatchQueue, ^{      //防止文本、图片发送的数据流紊乱
+                self.fileSize -= length;
+                [self sendData:data];
+            });
         }
-    }else{  //网络连接不正常
-        [self closeStream];
     }
+}
+
+- (void)openStream{
+    [_inputStream scheduleInRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
+    [_inputStream open];
 }
 
 - (void)closeStream{
     [_inputStream close];
     [_inputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
-    [NSNotificationCenter.defaultCenter removeObserver:self name:kReachabilityChangedNotification object:nil];
-}
-
-- (void)destroyStream{
-    [self closeStream];
     _inputStream = nil;
 }
 
@@ -125,9 +121,10 @@ extern STATUS_CODE Code_Connection;
     switch (reachability.currentReachabilityStatus) {
         case ReachableViaWiFi:
         case ReachableViaWWAN:
-            
+            [self openStream];
             break;
         default:
+            [self closeStream];
             break;
     }
 }
@@ -138,14 +135,14 @@ extern STATUS_CODE Code_Connection;
             [self readData];
             break;
         case NSStreamEventEndEncountered:{
-            [self destroyStream];
+            [self closeStream];
             dispatch_async(_dispatchQueue, ^{   //确保前一张图片读取完并发送完毕
                 [self startReading];
             });
         }
             break;
         case NSStreamEventErrorOccurred:
-            [self destroyStream];
+            [self closeStream];
             break;
         default:
             break;

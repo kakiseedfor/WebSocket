@@ -9,7 +9,9 @@
 #import "Masonry.h"
 #import "ViewController.h"
 #import "WebSocketManager.h"
-#import "NSObject+KVOObject.h"
+
+#import <Photos/Photos.h>
+#import <AVFoundation/AVFoundation.h>
 
 #define WeakSelf __weak typeof(self) weakSelf = self;
 
@@ -135,7 +137,7 @@
 
 #pragma mark - ViewController
 
-@interface ViewController ()<WebSocketDelegate, UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate>
+@interface ViewController ()<WebSocketDelegate, UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 @property (strong, nonatomic) WebSocketManager *manager;
 @property (strong, nonatomic) NSMutableArray *dataSource;
 @property (strong, nonatomic) NSString *urlString;
@@ -194,6 +196,110 @@
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
 }
 
+- (void)showStyleSheet{
+    UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        
+    }];
+    UIAlertAction *photoAction = [UIAlertAction actionWithTitle:@"拍照" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [self photoAction];
+    }];
+    UIAlertAction *albumAction = [UIAlertAction actionWithTitle:@"选择照片" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [self albumAction];
+    }];
+    [alertVC addAction:photoAction];
+    [alertVC addAction:albumAction];
+    [alertVC addAction:cancelAction];
+    
+    [self presentViewController:alertVC animated:YES completion:^{
+        
+    }];
+}
+
+#pragma mark - Action
+
+- (IBAction)stopAction:(UIBarButtonItem *)sender {
+    _operateItem.title = _manager.isConnected ? @"断开中..." : @"连接中...";
+    _manager.isConnected ? [_manager disConnect:@"Close WebSocket"] : [_manager connect:_urlString];
+}
+
+- (IBAction)optionAction:(id)sender {
+    [_textField resignFirstResponder];
+    [self showStyleSheet];
+}
+
+- (void)photoAction{
+    BOOL valid = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
+    valid = [UIImagePickerController isCameraDeviceAvailable:UIImagePickerControllerCameraDeviceRear];
+    
+    if (valid) {
+        AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        
+        if (device) {
+            AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+            switch (authStatus) {
+                case AVAuthorizationStatusRestricted:
+                case AVAuthorizationStatusDenied:
+                    NSLog(@"应用相机权限受限,请在设置中启用");
+                    break;
+                case AVAuthorizationStatusNotDetermined:{
+                    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
+                        !granted ? : [self showAlbum:UIImagePickerControllerSourceTypeCamera];
+                    }];
+                }
+                    break;
+                default:
+                    [self showAlbum:UIImagePickerControllerSourceTypeCamera];
+                    break;
+            }
+        }
+    }
+}
+
+- (void)albumAction{
+    PHAuthorizationStatus authStatus = [PHPhotoLibrary authorizationStatus];//读取设备授权状态
+    
+    switch (authStatus) {
+        case PHAuthorizationStatusRestricted:
+        case PHAuthorizationStatusDenied:
+            NSLog(@"应用相机权限受限,请在设置中启用");
+            break;
+        case PHAuthorizationStatusNotDetermined:{
+            [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+                if (status == PHAuthorizationStatusAuthorized) {
+                    [self showAlbum:UIImagePickerControllerSourceTypePhotoLibrary];
+                }
+            }];
+        }
+            break;
+        default:
+            [self showAlbum:UIImagePickerControllerSourceTypePhotoLibrary];
+            break;
+    }
+}
+
+- (void)showAlbum:(UIImagePickerControllerSourceType)sourceType{
+    UIImagePickerController * imagePicker = [[UIImagePickerController alloc] init];
+    imagePicker.editing = YES;
+    imagePicker.delegate = self;
+    imagePicker.allowsEditing = YES;
+    imagePicker.sourceType = sourceType;
+    
+    UINavigationBar.appearance.translucent = NO;
+    [self presentViewController:imagePicker animated:YES completion:nil];
+}
+
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
+    NSLog(@"%@",info);
+    [self imagePickerControllerDidCancel:picker];
+}
+
+- (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker{
+    [picker dismissViewControllerAnimated:YES completion:^{
+    }];
+}
+
 #pragma mark - Notification
 
 - (void)keyboardWillShow:(NSNotification *)notification{
@@ -226,7 +332,7 @@
 #pragma mark - UITextFieldDelegate
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField{
-    [self didSendText:textField.text];
+    !textField.text.length ? : [self didSendText:textField.text];
     textField.text = @"";
     
     [textField resignFirstResponder];
@@ -313,13 +419,6 @@
 - (void)didReceiveFile:(NSString *)filePath{
     CellModel *model = [[CellModel alloc] initWithPath:filePath];
     [_dataSource addObject:model];
-}
-
-#pragma mark - Action
-
-- (IBAction)stopAction:(UIBarButtonItem *)sender {
-    _operateItem.title = _manager.isConnected ? @"断开中..." : @"连接中...";
-    _manager.isConnected ? [_manager disConnect:@"Close WebSocket"] : [_manager connect:_urlString];
 }
 
 #pragma mark - Method
