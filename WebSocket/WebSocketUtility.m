@@ -10,19 +10,7 @@
 
 STATUS_CODE Code_Connection = Status_Code_Connection_Close;
 
-size_t ArrayLength(uint8_t *byte){
-    size_t length = 0;
-    while (*byte) {
-        byte++;
-        length++;
-    }
-    
-    return length;
-}
-
-void MaskByteWith(uint8_t *byte, uint8_t *mask){
-    size_t length = ArrayLength(byte);
-    
+void MaskByteWith(uint8_t *byte, uint8_t *mask, size_t length){
     for (size_t i = 0; i < length; i++) {
         byte[i] = byte[i] ^ mask[i % sizeof(uint32_t)];
     }
@@ -87,7 +75,7 @@ NSData *SerializeData(NSData *data, OPCode opCode, FIN_MASK finMask){
     
     uint64_t extendPayload = 0;
     size_t frameByteLength = sizeof(uint16_t);
-    size_t maskByteLength = sizeof(uint32_t);
+    size_t maskByteLength = (opCode == Close_OPCode ? 0 : sizeof(uint32_t));
     size_t extendLength = 0;
     size_t tempPayload = payload;
     if (tempPayload < PAY_LOAD_126) {
@@ -123,7 +111,7 @@ NSData *SerializeData(NSData *data, OPCode opCode, FIN_MASK finMask){
     frameBuffer += maskByteLength;
     
     memcpy(frameBuffer, bytes, tempPayload);
-    opCode == Close_OPCode ? : MaskByteWith(frameBuffer, mask);
+    !maskByteLength ? : MaskByteWith(frameBuffer, mask, tempPayload);
     
     return frameData;
 }

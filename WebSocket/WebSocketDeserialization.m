@@ -87,7 +87,7 @@ extern STATUS_CODE Code_Connection;
             
             uint64_t tempload = 0;
             memcpy(&tempload, subBytes, extendLength);
-            payload = payload == PAY_LOAD_126 ? CFSwapInt16BigToHost(tempload) : CFSwapInt64BigToHost(tempload);
+            payload = (payload == PAY_LOAD_126 ? CFSwapInt16BigToHost(tempload) : CFSwapInt64BigToHost(tempload));
         }
         
         uint8_t mask[maskLength];
@@ -110,7 +110,7 @@ extern STATUS_CODE Code_Connection;
         }
         
         dispatch_data_t payloadData = dispatch_data_create_subrange(*data, 0, payload);
-        payloadData == dispatch_data_empty || maskLength <= 0 ? : MaskByteWith((uint8_t *)((NSData *)payloadData).bytes, mask);
+        payloadData == dispatch_data_empty || maskLength <= 0 ? : MaskByteWith((uint8_t *)((NSData *)payloadData).bytes, mask, payload);
         
         _buffer = dispatch_data_create_concat(_buffer, payloadData);
         if (bytes[0] & FIN_FINAL_MASK) {

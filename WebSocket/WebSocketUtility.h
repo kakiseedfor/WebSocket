@@ -26,7 +26,7 @@ NSString *OriginUrl(NSURL *url);
 
 void SendData(NSData *data, OPCode opCode, CallBack callBack);
 
-void MaskByteWith(uint8_t *byte, uint8_t *mask);
+void MaskByteWith(uint8_t *byte, uint8_t *mask, size_t length);
 
 
 /*
