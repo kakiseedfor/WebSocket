@@ -189,13 +189,21 @@ extern STATUS_CODE Code_Connection;
     !(length < data.length) ? : [self closeStream];
 
     if (isFinish) {
+        NSString *outputPath = self.outputPath;
+        
         [self closeStream];
-        ![_delegate respondsToSelector:@selector(finishDeserializeFile:)] ? : [_delegate finishDeserializeFile:_outputPath];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            ![self.delegate respondsToSelector:@selector(finishDeserializeFile:)] ? : [self.delegate finishDeserializeFile:outputPath];
+        });
     }
 }
 
 - (void)sendFile:(NSString *)filePath{
     [_inputStream readFromFilePath:filePath];
+}
+
+- (void)sendData:(NSData *)data{
+    [_inputStream sendData:data];
 }
 
 - (void)closeStream{
@@ -215,7 +223,6 @@ extern STATUS_CODE Code_Connection;
         [NSFileManager.defaultManager createDirectoryAtPath:filePath withIntermediateDirectories:YES attributes:nil error:&error];
         !error ? : NSLog(@"%@",error.domain);
     }
-    NSLog(@"%@",filePath);
     
     return filePath;
 }

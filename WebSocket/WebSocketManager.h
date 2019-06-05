@@ -21,6 +21,8 @@
 
 - (void)sendFile:(NSString *)filePath;
 
+- (void)sendData:(NSData *)data;
+
 - (instancetype)initWith:(id<WebSocketDelegate>)delegate;
 
 @end

@@ -18,6 +18,8 @@
 
 - (void)sendFile:(NSString *)filePath;
 
+- (void)sendData:(NSData *)data;
+
 - (void)closeStream;
 
 @end

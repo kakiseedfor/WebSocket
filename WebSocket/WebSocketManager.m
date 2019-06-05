@@ -152,6 +152,12 @@ extern STATUS_CODE Code_Connection;
     }
 }
 
+- (void)sendData:(NSData *)data{
+    if (self.isConnected) {
+        [_fileManager sendData:data];
+    }
+}
+
 #pragma mark - Read And Write
 
 - (void)writeData:(dispatch_data_t)dispatchData{
@@ -244,7 +250,6 @@ extern STATUS_CODE Code_Connection;
             _heartbeat--;
             break;
         case Ping_OPCode:
-            NSLog(@"Response Ping!");
             [self sendPong:@""];
             break;
         case Close_OPCode:{

@@ -20,6 +20,7 @@
 @interface CellModel : NSObject
 @property (strong, nonatomic) NSString *text;
 @property (strong, nonatomic) NSString *filePath;
+@property (strong, nonatomic) UIImage *image;
 @property (copy, nonatomic) void (^block)(void);
 @property (nonatomic) CGSize size;
 @property (nonatomic) BOOL client;
@@ -58,6 +59,31 @@
     return self;
 }
 
+- (void)bitMap:(void (^)(void))block{
+    _block = block;
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        UIImage *image = [UIImage imageWithContentsOfFile:self.filePath];
+        
+        CGFloat widthRatio = self.size.width / image.size.width;
+        CGFloat heightRatio = self.size.height / image.size.height;
+        CGFloat width = (widthRatio < heightRatio ? self.size.width : image.size.height * heightRatio);
+        CGFloat height = (widthRatio < heightRatio ? image.size.height * widthRatio : self.size.height);
+        CGContextRef contextRef = CGBitmapContextCreate(NULL, width, height, CGImageGetBitsPerComponent(image.CGImage), 0, CGColorSpaceCreateDeviceRGB(), kCGImageAlphaNoneSkipLast);
+        CGContextDrawImage(contextRef, CGRectMake(0.f, 0.f, width, height), image.CGImage);
+        CGImageRef imageRef = CGBitmapContextCreateImage(contextRef);
+        
+        self.image = [UIImage imageWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
+        
+        CFRelease(contextRef);
+        CFRelease(imageRef);
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            !self.block ? : self.block();
+        });
+    });
+}
+
 - (void)textSize:(void (^)(void))block{
     _block = block;
     
@@ -91,11 +117,18 @@
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     
     if (self) {
+        [self.contentView addSubview:self.image];
         [self.contentView addSubview:self.text];
         [self.contentView addSubview:self.seperator];
         [_text mas_makeConstraints:^(MASConstraintMaker *make) {
             make.left.top.equalTo(self.contentView).offset(16.f);
             make.bottom.right.equalTo(self.contentView).offset(-16.f);
+        }];
+        
+        [_image mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.center.equalTo(self.contentView);
+            make.width.mas_equalTo(120.f);
+            make.height.mas_equalTo(150.f);
         }];
         
         [_seperator mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -109,7 +142,11 @@
 
 - (void)updateView:(CellModel *)model{
     _text.text = model.text;
+    _text.hidden = model.filePath.length ? YES : NO;
     _text.textAlignment = model.client ? NSTextAlignmentRight : NSTextAlignmentLeft;
+    
+    _image.hidden = model.filePath.length ? NO : YES;
+    _image.image = model.image;
 }
 
 - (UILabel *)text{
@@ -131,6 +168,16 @@
     }
     
     return _seperator;
+}
+
+- (UIImageView *)image{
+    if (!_image) {
+        UIImageView *temp = [[UIImageView alloc] init];
+        temp.contentMode = UIViewContentModeScaleAspectFit;
+        _image = temp;
+    }
+    
+    return _image;
 }
 
 @end
@@ -225,8 +272,20 @@
 }
 
 - (IBAction)optionAction:(id)sender {
-    [_textField resignFirstResponder];
-    [self showStyleSheet];
+    NSString *filePaht = [NSBundle.mainBundle pathForResource:@"ios-template" ofType:@"png"];
+    [_manager sendFile:filePaht];
+//
+//    NSString *filePaht1 = [NSBundle.mainBundle pathForResource:@"bg_newpop_tree" ofType:@"png"];
+//    [_manager sendFile:filePaht1];
+//    
+//    NSString *filePaht2 = [NSBundle.mainBundle pathForResource:@"bg_newpop_trees" ofType:@"png"];
+//    [_manager sendFile:filePaht2];
+    
+//    NSString *filePaht3 = [NSBundle.mainBundle pathForResource:@"live_bg" ofType:@"png"];
+//    [_manager sendFile:filePaht3];
+    
+//    [_textField resignFirstResponder];
+//    [self showStyleSheet];
 }
 
 - (void)photoAction{
@@ -291,8 +350,12 @@
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
-    NSURL *url = info[@"UIImagePickerControllerImageURL"];
-    [_manager sendFile:url.relativePath];
+    static PHAsset *asset = nil;
+    asset = info[@"UIImagePickerControllerPHAsset"];
+    [PHImageManager.defaultManager requestImageForAsset:asset targetSize:PHImageManagerMaximumSize contentMode:PHImageContentModeDefault options:nil resultHandler:^(UIImage * _Nullable result, NSDictionary * _Nullable info) {
+        NSURL *url = info[@"PHImageFileURLKey"];
+        [self.manager sendFile:url.relativePath];
+    }];
 //    [self imagePickerControllerDidCancel:picker];
 }
 
@@ -396,14 +459,15 @@
 }
 
 - (void)updateModel:(CellModel *)model{
+    [_dataSource addObject:model];
+    [_tableView reloadData];
+    
     WeakSelf;
     __weak typeof(model) weakModel = model;
     [model textSize:^{
         NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[weakSelf.dataSource indexOfObject:weakModel] inSection:0];
-        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationBottom];
     }];
-    [_dataSource addObject:model];
-    [_tableView reloadData];
 }
 
 - (void)didSendText:(NSString *)text{
@@ -420,6 +484,18 @@
 - (void)didReceiveFile:(NSString *)filePath{
     CellModel *model = [[CellModel alloc] initWithPath:filePath];
     [_dataSource addObject:model];
+    [_tableView reloadData];
+    
+    WeakSelf;
+    __weak typeof(model) weakModel = model;
+    [model bitMap:^{
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[weakSelf.dataSource indexOfObject:weakModel] inSection:0];
+        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationBottom];
+    }];
+}
+
+- (void)didFinishSendData{
+    
 }
 
 #pragma mark - Method
