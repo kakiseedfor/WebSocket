@@ -102,7 +102,7 @@ extern STATUS_CODE Code_Connection;
 #pragma mark - Operation
 
 - (void)sendText:(NSString *)text{
-    if (self.isConnected) {
+    if (self.isConnected && text.length) {
         WSSeakSelf;
         SendData([text dataUsingEncoding:NSUTF8StringEncoding], TextFrame_OPCode, ^(NSData *data) {
             [wsseakSelf finishSerializeToSend:data];

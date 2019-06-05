@@ -274,10 +274,10 @@
 - (IBAction)optionAction:(id)sender {
     NSString *filePaht = [NSBundle.mainBundle pathForResource:@"ios-template" ofType:@"png"];
     [_manager sendFile:filePaht];
-//
-//    NSString *filePaht1 = [NSBundle.mainBundle pathForResource:@"bg_newpop_tree" ofType:@"png"];
-//    [_manager sendFile:filePaht1];
-//    
+
+    NSString *filePaht1 = [NSBundle.mainBundle pathForResource:@"bg_newpop_tree" ofType:@"png"];
+    [_manager sendFile:filePaht1];
+    
 //    NSString *filePaht2 = [NSBundle.mainBundle pathForResource:@"bg_newpop_trees" ofType:@"png"];
 //    [_manager sendFile:filePaht2];
     
@@ -385,21 +385,21 @@
     
     [UIView animateWithDuration:.25f animations:^{
         [self.view layoutIfNeeded];
-    } completion:^(BOOL finished) {
-        if (self.dataSource.count) {
-            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.dataSource.count - 1 inSection:0];
-            [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-        }
     }];
+    
+    if (ABS(offset) && self.dataSource.count) {
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.dataSource.count - 1 inSection:0];
+        [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionNone animated:NO];
+    }
 }
 
 #pragma mark - UITextFieldDelegate
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField{
-    !textField.text.length ? : [self didSendText:textField.text];
+    [self didSendText:textField.text];
     textField.text = @"";
-    
     [textField resignFirstResponder];
+    
     return YES;
 }
 
@@ -460,13 +460,13 @@
 
 - (void)updateModel:(CellModel *)model{
     [_dataSource addObject:model];
-    [_tableView reloadData];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_dataSource indexOfObject:model] inSection:0];
+    [_tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
     
     WeakSelf;
-    __weak typeof(model) weakModel = model;
     [model textSize:^{
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[weakSelf.dataSource indexOfObject:weakModel] inSection:0];
-        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationBottom];
+        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+        [weakSelf.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
     }];
 }
 
@@ -484,18 +484,15 @@
 - (void)didReceiveFile:(NSString *)filePath{
     CellModel *model = [[CellModel alloc] initWithPath:filePath];
     [_dataSource addObject:model];
-    [_tableView reloadData];
+    
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_dataSource indexOfObject:model] inSection:0];
+    [_tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
     
     WeakSelf;
-    __weak typeof(model) weakModel = model;
     [model bitMap:^{
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[weakSelf.dataSource indexOfObject:weakModel] inSection:0];
-        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationBottom];
+        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+        [weakSelf.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
     }];
-}
-
-- (void)didFinishSendData{
-    
 }
 
 #pragma mark - Method
