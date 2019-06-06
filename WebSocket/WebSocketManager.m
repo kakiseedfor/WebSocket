@@ -120,7 +120,7 @@ extern STATUS_CODE Code_Connection;
         
         WSSeakSelf;
         dispatch_source_set_event_handler(_timer, ^{
-            if (self.reachability.currentReachabilityStatus) {
+            if (wsseakSelf.reachability.currentReachabilityStatus) {
                 NSError *error = nil;
                 if (wsseakSelf.heartbeat < 3) { //心跳包连续超时超过3次，即视为服务端端开链接
                     SendData([text dataUsingEncoding:NSUTF8StringEncoding], Ping_OPCode, ^(NSData *data) {

@@ -134,6 +134,7 @@ extern STATUS_CODE Code_Connection;
 - (void)resetStream{
     dispatch_block_cancel(_timer);
     
+    _timer = nil;
     _trust = NO;
     _sendHeader = NO;
     _headerData = nil;
