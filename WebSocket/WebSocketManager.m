@@ -23,6 +23,7 @@ extern STATUS_CODE Code_Connection;
 @property (nonatomic) dispatch_queue_t readQueue;  //考虑到弱网情况，需要形成生产消费者模式；确保每个线程对readDispatchData是安全的
 @property (nonatomic) dispatch_data_t writeDispatchData;
 @property (nonatomic) dispatch_data_t readDispatchData;
+@property (nonatomic) dispatch_block_t reachabilityBlock;
 @property (nonatomic) dispatch_source_t timer;
 @property (nonatomic) NSInteger heartbeat;
 
@@ -34,6 +35,8 @@ extern STATUS_CODE Code_Connection;
     NSLog(@"%s",__FUNCTION__);
     
     [self closeStream];
+    [_reachability stopNotifier];
+    [NSNotificationCenter.defaultCenter removeObserver:self name:kReachabilityChangedNotification object:nil];
 }
 
 - (instancetype)initWith:(id<WebSocketDelegate>)delegate
@@ -48,7 +51,10 @@ extern STATUS_CODE Code_Connection;
         _writeQueue = dispatch_queue_create("WebSocketManager.Write.Queue", DISPATCH_QUEUE_SERIAL);
         _socketProxy = [[WebSocketProxy alloc] initWith:self];
         _fileManager = [[WebSocketFileManager alloc] initWith:self];
+        _reachability = [WebSocketReachability reachabilityForInternetConnection];
         _deserialization = [[WebSocketDeserialization alloc] initWith:self];
+        
+        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(notificationStatusCode:) name:kReachabilityChangedNotification object:nil];
     }
     return self;
 }
@@ -59,11 +65,8 @@ extern STATUS_CODE Code_Connection;
     if (Code_Connection == Status_Code_Connection_Close) {
         Code_Connection = Status_Code_Connection_Doing;
         
-        _reachability = [WebSocketReachability reachabilityForInternetConnection];
         [_reachability  startNotifier];
         [_socketProxy connect:urlString];
-        
-        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(notificationStatusCode:) name:kReachabilityChangedNotification object:nil];
     }
 }
 
@@ -84,13 +87,11 @@ extern STATUS_CODE Code_Connection;
     Code_Connection = Status_Code_Connection_Close;
     
     !_timer ? : dispatch_source_cancel(_timer);
-    [_reachability stopNotifier];
     [_fileManager closeStream];
     [_outputStream close];
     [_inputStream close];
     [_inputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
     [_outputStream removeFromRunLoop:Thread.shareInstance.runLoop forMode:NSDefaultRunLoopMode];
-    [NSNotificationCenter.defaultCenter removeObserver:self name:kReachabilityChangedNotification object:nil];
     
     _heartbeat = 0;
     _inputStream = nil;
@@ -119,19 +120,21 @@ extern STATUS_CODE Code_Connection;
         
         WSSeakSelf;
         dispatch_source_set_event_handler(_timer, ^{
-            NSError *error = nil;
-            if (wsseakSelf.heartbeat < 3) { //心跳包连续超时超过3次，即视为服务端端开链接
-                SendData([text dataUsingEncoding:NSUTF8StringEncoding], Ping_OPCode, ^(NSData *data) {
-                    [wsseakSelf finishSerializeToSend:data];
+            if (self.reachability.currentReachabilityStatus) {
+                NSError *error = nil;
+                if (wsseakSelf.heartbeat < 3) { //心跳包连续超时超过3次，即视为服务端端开链接
+                    SendData([text dataUsingEncoding:NSUTF8StringEncoding], Ping_OPCode, ^(NSData *data) {
+                        [wsseakSelf finishSerializeToSend:data];
+                    });
+                }else{
+                    error = [NSError errorWithDomain:@"The Service has not response Ping Code!" code:Status_Code_Connection_Error userInfo:@{}];
+                    [wsseakSelf finishDeserializeError:error];
+                }
+                
+                error ? : dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{  //心跳包超过3秒即为超时
+                    wsseakSelf.heartbeat++;
                 });
-            }else{
-                error = [NSError errorWithDomain:@"The Service has not response Ping Code!" code:Status_Code_Connection_Error userInfo:@{}];
-                [wsseakSelf finishDeserializeError:error];
             }
-            
-            error ? : dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{  //心跳包超过3秒即为超时
-                wsseakSelf.heartbeat++;
-            });
         });
         dispatch_resume(_timer);
     }
@@ -201,13 +204,19 @@ extern STATUS_CODE Code_Connection;
 
 - (void)notificationStatusCode:(NSNotification *)notification{
     switch (_reachability.currentReachabilityStatus) {
-        case NotReachable:{
-            NSError *error = [NSError errorWithDomain:@"The connection is invalid!" code:Status_Code_Connection_Invalid userInfo:@{}];
-            [self finishDeserializeError:error];
-        }
+        case NotReachable:
+            if (self.isConnected && !_reachabilityBlock) {
+                _reachabilityBlock = dispatch_block_create(DISPATCH_BLOCK_DETACHED, ^{
+                    NSError *error = [NSError errorWithDomain:@"The connection is invalid!" code:Status_Code_Connection_Invalid userInfo:@{}];
+                    [self finishDeserializeError:error];
+                });
+
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), _reachabilityBlock);
+            }
             break;
         default:
-            self.isConnected ? : [self reconnect];
+            !_reachabilityBlock ? : dispatch_block_cancel(_reachabilityBlock);
+            _reachabilityBlock = nil;
             break;
     }
 }
@@ -247,7 +256,7 @@ extern STATUS_CODE Code_Connection;
 - (void)finishDeserializeString:(NSString *)text opCode:(OPCode)opCode{
     switch (opCode) {
         case Pong_OPCode:
-            _heartbeat--;
+            _heartbeat = 0;
             break;
         case Ping_OPCode:
             [self sendPong:@""];
