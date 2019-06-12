@@ -292,7 +292,9 @@
                     break;
                 case AVAuthorizationStatusNotDetermined:{
                     [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
-                        !granted ? : [self showAlbum:UIImagePickerControllerSourceTypeCamera];
+                        !granted ? : dispatch_async(dispatch_get_main_queue(), ^{
+                            [self showAlbum:UIImagePickerControllerSourceTypeCamera];
+                        });
                     }];
                 }
                     break;
@@ -345,7 +347,7 @@
 //    }];
     
     UIImage *image = info [@"UIImagePickerControllerEditedImage"];
-    [_manager sendData:UIImagePNGRepresentation(image)];
+    [_manager sendData:UIImageJPEGRepresentation(image, 0.f)];
     [self imagePickerControllerDidCancel:picker];
 }
 
@@ -518,7 +520,7 @@
     
     self.navigationItem.title = @"Socket Lists";
     
-    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://119.29.3.36:6700/", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*", @"ws://localhost:8080/"];
+    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://119.29.3.36:6700/", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*", @"ws://10.0.2.20:8080/"];
     [_tableView registerClass:UITableViewCell.class forCellReuseIdentifier:@"UITableViewCell"];
 }
 

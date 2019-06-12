@@ -68,6 +68,12 @@ extern STATUS_CODE Code_Connection;
     }
 }
 
+- (void)sendFileData:(NSData *)data{
+    _opCode = BinaryFrame_OPCode;
+    _fileSize = data.length;
+    [self sendData:data];
+}
+
 - (void)sendData:(NSData *)data{
     dispatch_data_t dispatchData = dispatch_data_create(data.bytes, data.length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
     do {
@@ -187,7 +193,7 @@ extern STATUS_CODE Code_Connection;
 - (void)writeData:(NSData *)data isFinish:(BOOL)isFinish{
     NSInteger length = [self.outputStream write:data.bytes maxLength:data.length];
     !(length < data.length) ? : [self closeStream];
-
+    
     if (isFinish) {
         NSString *outputPath = self.outputPath;
         
@@ -203,7 +209,7 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)sendData:(NSData *)data{
-    [_inputStream sendData:data];
+    [_inputStream sendFileData:data];
 }
 
 - (void)closeStream{
