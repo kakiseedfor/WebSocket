@@ -272,20 +272,8 @@
 }
 
 - (IBAction)optionAction:(id)sender {
-    NSString *filePaht = [NSBundle.mainBundle pathForResource:@"ios-template" ofType:@"png"];
-    [_manager sendFile:filePaht];
-
-    NSString *filePaht1 = [NSBundle.mainBundle pathForResource:@"bg_newpop_tree" ofType:@"png"];
-    [_manager sendFile:filePaht1];
-    
-//    NSString *filePaht2 = [NSBundle.mainBundle pathForResource:@"bg_newpop_trees" ofType:@"png"];
-//    [_manager sendFile:filePaht2];
-    
-//    NSString *filePaht3 = [NSBundle.mainBundle pathForResource:@"live_bg" ofType:@"png"];
-//    [_manager sendFile:filePaht3];
-    
-//    [_textField resignFirstResponder];
-//    [self showStyleSheet];
+    [_textField resignFirstResponder];
+    [self showStyleSheet];
 }
 
 - (void)photoAction{
@@ -350,13 +338,15 @@
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
-    static PHAsset *asset = nil;
-    asset = info[@"UIImagePickerControllerPHAsset"];
-    [PHImageManager.defaultManager requestImageForAsset:asset targetSize:PHImageManagerMaximumSize contentMode:PHImageContentModeDefault options:nil resultHandler:^(UIImage * _Nullable result, NSDictionary * _Nullable info) {
-        NSURL *url = info[@"PHImageFileURLKey"];
-        [self.manager sendFile:url.relativePath];
-    }];
-//    [self imagePickerControllerDidCancel:picker];
+//    PHAsset *asset = info[@"UIImagePickerControllerPHAsset"];
+//    [PHImageManager.defaultManager requestImageForAsset:asset targetSize:PHImageManagerMaximumSize contentMode:PHImageContentModeDefault options:nil resultHandler:^(UIImage * _Nullable result, NSDictionary * _Nullable info) {
+//        NSURL *url = info[@"PHImageFileURLKey"];
+//        [self.manager sendFile:url.relativePath];
+//    }];
+    
+    UIImage *image = info [@"UIImagePickerControllerEditedImage"];
+    [_manager sendData:UIImagePNGRepresentation(image)];
+    [self imagePickerControllerDidCancel:picker];
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker{
@@ -528,7 +518,7 @@
     
     self.navigationItem.title = @"Socket Lists";
     
-    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*"];
+    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://119.29.3.36:6700/", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*", @"ws://localhost:8080/"];
     [_tableView registerClass:UITableViewCell.class forCellReuseIdentifier:@"UITableViewCell"];
 }
 

@@ -22,6 +22,7 @@
 		EC79538222A4F6E500CBC9BE /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC79538122A4F6E500CBC9BE /* SystemConfiguration.framework */; };
 		EC79538522A4F88200CBC9BE /* WebSocketReachability.m in Sources */ = {isa = PBXBuildFile; fileRef = EC79538422A4F88100CBC9BE /* WebSocketReachability.m */; };
 		EC914CD622A6215F009DD13C /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC914CD522A6215E009DD13C /* Photos.framework */; };
+		EC914CF222A76253009DD13C /* AssetsLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC914CF122A76252009DD13C /* AssetsLibrary.framework */; };
 		ECAD1FEA2293DF5A00CB4C8F /* WebSocketManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ECAD1FE92293DF5A00CB4C8F /* WebSocketManager.m */; };
 		ECB9DB232294FD7F00E32EF5 /* WebSocketUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = ECB9DB222294FD7F00E32EF5 /* WebSocketUtility.m */; };
 		ECB9DB26229521F900E32EF5 /* WebSocketDeserialization.m in Sources */ = {isa = PBXBuildFile; fileRef = ECB9DB25229521F900E32EF5 /* WebSocketDeserialization.m */; };
@@ -70,6 +71,7 @@
 		EC79538322A4F88100CBC9BE /* WebSocketReachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketReachability.h; sourceTree = "<group>"; };
 		EC79538422A4F88100CBC9BE /* WebSocketReachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketReachability.m; sourceTree = "<group>"; };
 		EC914CD522A6215E009DD13C /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
+		EC914CF122A76252009DD13C /* AssetsLibrary.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AssetsLibrary.framework; path = System/Library/Frameworks/AssetsLibrary.framework; sourceTree = SDKROOT; };
 		ECAD1FE722939E0400CB4C8F /* WebSocketHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocketHeader.h; sourceTree = "<group>"; };
 		ECAD1FE82293DF5A00CB4C8F /* WebSocketManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocketManager.h; sourceTree = "<group>"; };
 		ECAD1FE92293DF5A00CB4C8F /* WebSocketManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WebSocketManager.m; sourceTree = "<group>"; };
@@ -99,6 +101,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EC914CF222A76253009DD13C /* AssetsLibrary.framework in Frameworks */,
 				EC914CD622A6215F009DD13C /* Photos.framework in Frameworks */,
 				EC79538222A4F6E500CBC9BE /* SystemConfiguration.framework in Frameworks */,
 				ECB9DB34229E624C00E32EF5 /* CoreTelephony.framework in Frameworks */,
@@ -154,6 +157,7 @@
 		ECB9DB32229E624C00E32EF5 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				EC914CF122A76252009DD13C /* AssetsLibrary.framework */,
 				EC914CD522A6215E009DD13C /* Photos.framework */,
 				EC79538122A4F6E500CBC9BE /* SystemConfiguration.framework */,
 				ECB9DB33229E624C00E32EF5 /* CoreTelephony.framework */,
@@ -440,7 +444,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = YP746KY9X2;
+				DEVELOPMENT_TEAM = RM9683J6AM;
 				INFOPLIST_FILE = WebSocket/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -457,7 +461,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = YP746KY9X2;
+				DEVELOPMENT_TEAM = RM9683J6AM;
 				INFOPLIST_FILE = WebSocket/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
