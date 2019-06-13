@@ -29,22 +29,13 @@
 
 @implementation CellModel
 
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        _size = CGSizeZero;
-    }
-    return self;
-}
-
 - (instancetype)initWithText:(NSString *)text client:(BOOL)client
 {
     self = [self init];
     if (self) {
+        _size = CGSizeZero;
         _text = text;
         _client = client;
-        _size = CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds) - 32.f, 64.f);
     }
     return self;
 }
@@ -59,45 +50,29 @@
     return self;
 }
 
-- (void)bitMap:(void (^)(void))block{
-    _block = block;
+- (void)bitMap{
+    UIImage *image = [UIImage imageWithContentsOfFile:self.filePath];
     
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        UIImage *image = [UIImage imageWithContentsOfFile:self.filePath];
-        
-        CGFloat widthRatio = self.size.width / image.size.width;
-        CGFloat heightRatio = self.size.height / image.size.height;
-        CGFloat width = (widthRatio < heightRatio ? self.size.width : image.size.height * heightRatio);
-        CGFloat height = (widthRatio < heightRatio ? image.size.height * widthRatio : self.size.height);
-        CGContextRef contextRef = CGBitmapContextCreate(NULL, width, height, CGImageGetBitsPerComponent(image.CGImage), 0, CGColorSpaceCreateDeviceRGB(), kCGImageAlphaNoneSkipLast);
-        CGContextDrawImage(contextRef, CGRectMake(0.f, 0.f, width, height), image.CGImage);
-        CGImageRef imageRef = CGBitmapContextCreateImage(contextRef);
-        
-        self.image = [UIImage imageWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
-        
-        CFRelease(contextRef);
-        CFRelease(imageRef);
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            !self.block ? : self.block();
-        });
-    });
+    CGFloat widthRatio = self.size.width / image.size.width;
+    CGFloat heightRatio = self.size.height / image.size.height;
+    CGFloat width = (widthRatio < heightRatio ? self.size.width : image.size.height * heightRatio);
+    CGFloat height = (widthRatio < heightRatio ? image.size.height * widthRatio : self.size.height);
+    CGContextRef contextRef = CGBitmapContextCreate(NULL, width, height, CGImageGetBitsPerComponent(image.CGImage), 0, CGColorSpaceCreateDeviceRGB(), kCGImageAlphaNoneSkipLast);
+    CGContextDrawImage(contextRef, CGRectMake(0.f, 0.f, width, height), image.CGImage);
+    CGImageRef imageRef = CGBitmapContextCreateImage(contextRef);
+    
+    self.image = [UIImage imageWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
+    
+    CFRelease(contextRef);
+    CFRelease(imageRef);
 }
 
-- (void)textSize:(void (^)(void))block{
-    _block = block;
+- (void)textSize{
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    paragraphStyle.lineSpacing = 0.1f;
+    paragraphStyle.alignment = NSTextAlignmentJustified;
     
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
-        paragraphStyle.lineSpacing = 0.1f;
-        paragraphStyle.alignment = NSTextAlignmentJustified;
-        
-        self.size = [self.text boundingRectWithSize:CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds) - 32.f, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName : [UIFont systemFontOfSize:18.f], NSParagraphStyleAttributeName : paragraphStyle} context:nil].size;
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            !self.block ? : self.block();
-        });
-    });
+    self.size = [self.text boundingRectWithSize:CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds) - 32.f, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName : [UIFont systemFontOfSize:18.f], NSParagraphStyleAttributeName : paragraphStyle} context:nil].size;
 }
 
 @end
@@ -189,6 +164,7 @@
 @property (strong, nonatomic) NSMutableArray *dataSource;
 @property (strong, nonatomic) NSString *urlString;
 
+@property (nonatomic) dispatch_queue_t updateQueue;
 @property (strong, nonatomic) UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UIView *inputView;
 @property (weak, nonatomic) IBOutlet UIButton *optionBtn;
@@ -210,6 +186,7 @@
     
     self.navigationItem.title = @"Chat Room";
     
+    _updateQueue = dispatch_queue_create("View.Controller", DISPATCH_QUEUE_SERIAL);
     _dataSource = [NSMutableArray array];
     _manager = [[WebSocketManager alloc] initWith:self];
     
@@ -241,6 +218,10 @@
     
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapAciton:)];
+    tap.numberOfTapsRequired = 1;
+    [self.view addGestureRecognizer:tap];
 }
 
 - (void)showStyleSheet{
@@ -259,9 +240,7 @@
     [alertVC addAction:albumAction];
     [alertVC addAction:cancelAction];
     
-    [self presentViewController:alertVC animated:YES completion:^{
-        
-    }];
+    [self presentViewController:alertVC animated:YES completion:^{}];
 }
 
 #pragma mark - Action
@@ -274,6 +253,14 @@
 - (IBAction)optionAction:(id)sender {
     [_textField resignFirstResponder];
     [self showStyleSheet];
+}
+
+- (void)tapAciton:(UITapGestureRecognizer *)tap{
+    [_textField resignFirstResponder];
+}
+
+- (void)scrollToBottom{
+    
 }
 
 - (void)photoAction{
@@ -339,6 +326,8 @@
     [self presentViewController:imagePicker animated:YES completion:nil];
 }
 
+#pragma mark - UIImagePickerControllerDelegate, UINavigationControllerDelegate
+
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
 //    PHAsset *asset = info[@"UIImagePickerControllerPHAsset"];
 //    [PHImageManager.defaultManager requestImageForAsset:asset targetSize:PHImageManagerMaximumSize contentMode:PHImageContentModeDefault options:nil resultHandler:^(UIImage * _Nullable result, NSDictionary * _Nullable info) {
@@ -390,7 +379,6 @@
 - (BOOL)textFieldShouldReturn:(UITextField *)textField{
     [self didSendText:textField.text];
     textField.text = @"";
-    [textField resignFirstResponder];
     
     return YES;
 }
@@ -423,15 +411,25 @@
 - (void)didCloseWebSocket{
     _operateItem.title = @"连接";
     
-    CellModel *model = [[CellModel alloc] initWithText:@"Status Code Connection Close : 客户端" client:YES];
-    [self updateModel:model];
+    dispatch_async(_updateQueue, ^{
+        CellModel *model = [[CellModel alloc] initWithText:@"Status Code Connection Close : 客户端" client:YES];
+        [model textSize];
+        [self.dataSource addObject:model];
+        
+        [self finalizeOperation];
+    });
 }
 
 - (void)didConnectWebSocket{
     _operateItem.title = @"断开";
     
-    CellModel *model = [[CellModel alloc] initWithText:@"Connected WebSocket : 客户端" client:YES];
-    [self updateModel:model];
+    dispatch_async(_updateQueue, ^{
+        CellModel *model = [[CellModel alloc] initWithText:@"Connected WebSocket : 客户端" client:YES];
+        [model textSize];
+        [self.dataSource addObject:model];
+        
+        [self finalizeOperation];
+    });
 }
 
 - (void)connectionWithError:(NSError *)error{
@@ -450,41 +448,45 @@
     }];
 }
 
-- (void)updateModel:(CellModel *)model{
-    [_dataSource addObject:model];
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_dataSource indexOfObject:model] inSection:0];
-    [_tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-    
-    WeakSelf;
-    [model textSize:^{
-        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-        [weakSelf.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-    }];
+- (void)finalizeOperation{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.dataSource.count - 1 inSection:0];
+        [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+        
+        [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
+    });
 }
 
 - (void)didSendText:(NSString *)text{
-    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"%@ : 客户端",text] client:YES];
-    [self updateModel:model];
+    dispatch_async(_updateQueue, ^{
+        CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"%@ : 客户端",text] client:YES];
+        [model textSize];
+        [self.dataSource addObject:model];
+        
+        [self finalizeOperation];
+    });
+    
     [_manager sendText:text];
 }
 
 - (void)didReceiveText:(NSString *)text{
-    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"服务端 : %@",text] client:NO];
-    [self updateModel:model];
+    dispatch_async(_updateQueue, ^{
+        CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"服务端 : %@",text] client:NO];
+        [model textSize];
+        [self.dataSource addObject:model];
+        
+        [self finalizeOperation];
+    });
 }
 
 - (void)didReceiveFile:(NSString *)filePath{
-    CellModel *model = [[CellModel alloc] initWithPath:filePath];
-    [_dataSource addObject:model];
-    
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_dataSource indexOfObject:model] inSection:0];
-    [_tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-    
-    WeakSelf;
-    [model bitMap:^{
-        [weakSelf.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-        [weakSelf.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-    }];
+    dispatch_async(_updateQueue, ^{
+        CellModel *model = [[CellModel alloc] initWithPath:filePath];
+        [model bitMap];
+        [self.dataSource addObject:model];
+        
+        [self finalizeOperation];
+    });
 }
 
 #pragma mark - Method

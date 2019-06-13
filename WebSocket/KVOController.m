@@ -180,7 +180,7 @@
     uint count = 0;
     objc_property_t *propertyList = class_copyPropertyList(objClass, &count);
     for (int i = 0; i < count; i++) {
-        const char *attributes = property_getAttributes(propertyList[i]);
+        const char *attributes = property_getName(propertyList[i]);
         char *result = strstr(attributes, keyPath.UTF8String);
         
         if (result) {

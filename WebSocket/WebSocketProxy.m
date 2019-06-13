@@ -42,7 +42,6 @@ extern STATUS_CODE Code_Connection;
 - (void)connect:(NSString *)urlString{
     _url = [NSURL URLWithString:urlString];
     _request = [NSURLRequest requestWithURL:_url];
-    _headerData = [NSMutableData data];
     
     CTCellularData *cellularData = [[CTCellularData alloc] init];
     cellularData.cellularDataRestrictionDidUpdateNotifier = ^(CTCellularDataRestrictedState state) {
@@ -67,6 +66,8 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)startConnect{
+    _headerData = [NSMutableData data];
+    
     NSURL *tempUrl = [NSURL URLWithString:[NSString stringWithFormat:self.isSecurity ? @"https://%@" : @"http://%@",_url.host]];
     
     CFDictionaryRef dicRef = CFNetworkCopySystemProxySettings();

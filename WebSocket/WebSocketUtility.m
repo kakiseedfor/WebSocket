@@ -46,7 +46,7 @@ NSCondition *ShareCondition(){
 }
 
 void SendData(NSData *data, OPCode opCode, CallBack callBack){
-    dispatch_queue_t queue = dispatch_queue_create("WebSoket.Serialization.Target", DISPATCH_QUEUE_SERIAL);
+    dispatch_queue_t queue = dispatch_queue_create("WebSoket.Serialization.Target", DISPATCH_QUEUE_SERIAL); //确保每次的数据发送完后再发下一个
     
     opCode != TextFrame_OPCode ? : dispatch_set_target_queue(queue, ShareTargetQueue());
     

@@ -71,7 +71,10 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)reconnect{
-    [_socketProxy reconnect];
+    if (_inputStream.streamStatus == NSStreamStatusError || _outputStream.streamStatus == NSStreamStatusError) {
+        [self closeStream];
+        [_socketProxy reconnect];
+    }
 }
 
 - (void)disConnect:(NSString *)text{
@@ -217,6 +220,8 @@ extern STATUS_CODE Code_Connection;
         default:
             !_reachabilityBlock ? : dispatch_block_cancel(_reachabilityBlock);
             _reachabilityBlock = nil;
+            
+            [self reconnect];
             break;
     }
 }
@@ -232,7 +237,9 @@ extern STATUS_CODE Code_Connection;
     switch (error.code) {
         case Status_Code_Connection_Invalid:{
             [self closeStream];
-            ![_delegate respondsToSelector:@selector(connectionWithError:)] ? : [_delegate connectionWithError:error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                ![self.delegate respondsToSelector:@selector(connectionWithError:)] ? : [self.delegate connectionWithError:error];
+            });
         }
             break;
         case Status_Code_Connection_Close:
