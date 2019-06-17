@@ -84,7 +84,7 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)countdown{
-    _timer = dispatch_block_create(DISPATCH_BLOCK_DETACHED, ^{
+    _timer = dispatch_block_create(DISPATCH_BLOCK_ASSIGN_CURRENT, ^{
         if (Code_Connection != Status_Code_Connection_Normal) {
             [self closeStream];
             
@@ -214,12 +214,16 @@ extern STATUS_CODE Code_Connection;
 - (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode{
     switch (eventCode) {
         case NSStreamEventHasBytesAvailable:
-            _trust = self.isSecurity ? (_trust ? _trust : [self checkSecurity:aStream]) : YES;
-            _trust ? [self receiveShakehandHeader] : [self closeStream];
-            break;
         case NSStreamEventHasSpaceAvailable:
             _trust = self.isSecurity ? (_trust ? _trust : [self checkSecurity:aStream]) : YES;
-            _trust ? [self sendShakehandHeader] : [self closeStream];
+            
+            if (_trust) {
+                eventCode == NSStreamEventHasBytesAvailable ? [self receiveShakehandHeader] : [self sendShakehandHeader];
+            }else{
+                NSError *error = [NSError errorWithDomain:@"Can not trust service!" code:Status_Code_Connection_Error userInfo:@{}];
+                ![self.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [self.delegate didConnect:self.inputStream outputStream:self.outputStream error:error];
+                [self closeStream];
+            }
             break;
         case NSStreamEventErrorOccurred:{
             NSError *error = [NSError errorWithDomain:@"Connection occur error!" code:Status_Code_Connection_Error userInfo:@{}];

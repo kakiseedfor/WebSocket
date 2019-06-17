@@ -103,7 +103,7 @@ extern STATUS_CODE Code_Connection;
         if (length) {
             NSData *data = [NSData dataWithBytes:buffer length:length];
             
-            dispatch_async(_dispatchQueue, ^{      //防止文本、图片发送的数据流紊乱
+            dispatch_async(_dispatchQueue, ^{      //防止文本、图片发送的数据流紊乱(因为文本与图片可能会在不同线程上)
                 [self sendData:data];
             });
         }

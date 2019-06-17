@@ -209,7 +209,7 @@ extern STATUS_CODE Code_Connection;
     switch (_reachability.currentReachabilityStatus) {
         case NotReachable:
             if (self.isConnected && !_reachabilityBlock) {
-                _reachabilityBlock = dispatch_block_create(DISPATCH_BLOCK_DETACHED, ^{
+                _reachabilityBlock = dispatch_block_create(DISPATCH_BLOCK_ASSIGN_CURRENT, ^{
                     NSError *error = [NSError errorWithDomain:@"The connection is invalid!" code:Status_Code_Connection_Invalid userInfo:@{}];
                     [self finishDeserializeError:error];
                 });
