@@ -164,7 +164,7 @@
 @property (strong, nonatomic) NSMutableArray *dataSource;
 @property (strong, nonatomic) NSString *urlString;
 
-@property (nonatomic) dispatch_queue_t updateQueue;
+@property (nonatomic) dispatch_semaphore_t semaphore;
 @property (strong, nonatomic) UITableView *tableView;
 @property (weak, nonatomic) IBOutlet UIView *inputView;
 @property (weak, nonatomic) IBOutlet UIButton *optionBtn;
@@ -186,7 +186,7 @@
     
     self.navigationItem.title = @"Chat Room";
     
-    _updateQueue = dispatch_queue_create("View.Controller", DISPATCH_QUEUE_SERIAL);
+    _semaphore = dispatch_semaphore_create(1);
     _dataSource = [NSMutableArray array];
     _manager = [[WebSocketManager alloc] initWith:self];
     
@@ -409,32 +409,26 @@
 #pragma mark - WebSocketDelegate
 
 - (void)didCloseWebSocket{
-    _operateItem.title = @"连接";
+    dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
     
-    dispatch_async(_updateQueue, ^{
-        CellModel *model = [[CellModel alloc] initWithText:@"Status Code Connection Close : 客户端" client:YES];
-        [model textSize];
-        [self.dataSource addObject:model];
-        
-        [self finalizeOperation];
-    });
+    CellModel *model = [[CellModel alloc] initWithText:@"Status Code Connection Close : 客户端" client:YES];
+    [model textSize];
+    [self.dataSource addObject:model];
+    
+    [self finalizeOperation];
 }
 
 - (void)didConnectWebSocket{
-    _operateItem.title = @"断开";
+    dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
     
-    dispatch_async(_updateQueue, ^{
-        CellModel *model = [[CellModel alloc] initWithText:@"Connected WebSocket : 客户端" client:YES];
-        [model textSize];
-        [self.dataSource addObject:model];
-        
-        [self finalizeOperation];
-    });
+    CellModel *model = [[CellModel alloc] initWithText:@"Connected WebSocket : 客户端" client:YES];
+    [model textSize];
+    [self.dataSource addObject:model];
+    
+    [self finalizeOperation];
 }
 
 - (void)connectionWithError:(NSError *)error{
-    _operateItem.title = @"连接";
-    
     UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"提示" message:error.domain preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction *cancleAction = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
     }];
@@ -450,43 +444,45 @@
 
 - (void)finalizeOperation{
     dispatch_async(dispatch_get_main_queue(), ^{
+        self.operateItem.title = self.manager.isConnected ? @"断开" : @"连接";
+        
         NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.dataSource.count - 1 inSection:0];
         [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-        
         [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
+        
+        dispatch_semaphore_signal(self.semaphore);
     });
 }
 
 - (void)didSendText:(NSString *)text{
-    dispatch_async(_updateQueue, ^{
-        CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"%@ : 客户端",text] client:YES];
-        [model textSize];
-        [self.dataSource addObject:model];
-        
-        [self finalizeOperation];
-    });
+    dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
     
+    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"%@ : 客户端",text] client:YES];
+    [model textSize];
+    [self.dataSource addObject:model];
+    
+    [self finalizeOperation];
     [_manager sendText:text];
 }
 
 - (void)didReceiveText:(NSString *)text{
-    dispatch_async(_updateQueue, ^{
-        CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"服务端 : %@",text] client:NO];
-        [model textSize];
-        [self.dataSource addObject:model];
-        
-        [self finalizeOperation];
-    });
+    dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
+    
+    CellModel *model = [[CellModel alloc] initWithText:[NSString stringWithFormat:@"服务端 : %@",text] client:NO];
+    [model textSize];
+    [self.dataSource addObject:model];
+    
+    [self finalizeOperation];
 }
 
 - (void)didReceiveFile:(NSString *)filePath{
-    dispatch_async(_updateQueue, ^{
-        CellModel *model = [[CellModel alloc] initWithPath:filePath];
-        [model bitMap];
-        [self.dataSource addObject:model];
-        
-        [self finalizeOperation];
-    });
+    dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
+    
+    CellModel *model = [[CellModel alloc] initWithPath:filePath];
+    [model bitMap];
+    [self.dataSource addObject:model];
+    
+    [self finalizeOperation];
 }
 
 #pragma mark - Method
@@ -522,7 +518,7 @@
     
     self.navigationItem.title = @"Socket Lists";
     
-    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://119.29.3.36:6700/", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*", @"ws://10.0.2.20:8080/"];
+    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://119.29.3.36:6700/", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*", @"ws://10.0.2.20:8080/", @"ws://192.168.90.216:3457/mktdata?contractid=5237"];
     [_tableView registerClass:UITableViewCell.class forCellReuseIdentifier:@"UITableViewCell"];
 }
 

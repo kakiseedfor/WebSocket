@@ -19,8 +19,8 @@ extern STATUS_CODE Code_Connection;
 @property (strong, nonatomic) WebSocketProxy *socketProxy;
 @property (strong, nonatomic) NSOutputStream *outputStream;
 @property (strong, nonatomic) NSInputStream *inputStream;
-@property (nonatomic) dispatch_queue_t writeQueue;  //考虑到弱网、无网情况及实时发送特殊的OPCode；确保每个线程对writeDispatchData是安全的
-@property (nonatomic) dispatch_queue_t readQueue;  //考虑到弱网情况，需要形成生产消费者模式；确保每个线程对readDispatchData是安全的
+@property (nonatomic) dispatch_queue_t writeQueue;  //分离序列化和写操作，并确保每个线程对writeDispatchData是安全的
+@property (nonatomic) dispatch_queue_t readQueue;  //分离反序列化和读操作，并确保每个线程对readDispatchData是安全的
 @property (nonatomic) dispatch_data_t writeDispatchData;
 @property (nonatomic) dispatch_data_t readDispatchData;
 @property (nonatomic) dispatch_block_t reachabilityBlock;
@@ -237,9 +237,7 @@ extern STATUS_CODE Code_Connection;
     switch (error.code) {
         case Status_Code_Connection_Invalid:{
             [self closeStream];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                ![self.delegate respondsToSelector:@selector(connectionWithError:)] ? : [self.delegate connectionWithError:error];
-            });
+            ![self.delegate respondsToSelector:@selector(connectionWithError:)] ? : [self.delegate connectionWithError:error];
         }
             break;
         case Status_Code_Connection_Close:
@@ -270,17 +268,11 @@ extern STATUS_CODE Code_Connection;
             break;
         case Close_OPCode:{
             [self closeStream];
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                ![self.delegate respondsToSelector:@selector(didCloseWebSocket)] ? : [self.delegate didCloseWebSocket];
-            });
+            ![self.delegate respondsToSelector:@selector(didCloseWebSocket)] ? : [self.delegate didCloseWebSocket];
         }
             break;
-        default:{
-            dispatch_async(dispatch_get_main_queue(), ^{
-                ![self.delegate respondsToSelector:@selector(didReceiveText:)] ? : [self.delegate didReceiveText:text];
-            });
-        }
+        default:
+            ![self.delegate respondsToSelector:@selector(didReceiveText:)] ? : [self.delegate didReceiveText:text];
             break;
     }
 }
@@ -318,9 +310,7 @@ extern STATUS_CODE Code_Connection;
         Code_Connection = Status_Code_Connection_Normal;
         
         [self sendPing:@""];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            ![self.delegate respondsToSelector:@selector(didConnectWebSocket)] ? : [self.delegate didConnectWebSocket];
-        });
+        ![self.delegate respondsToSelector:@selector(didConnectWebSocket)] ? : [self.delegate didConnectWebSocket];
     }
 }
 
