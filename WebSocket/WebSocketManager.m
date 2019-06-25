@@ -19,8 +19,8 @@ extern STATUS_CODE Code_Connection;
 @property (strong, nonatomic) WebSocketProxy *socketProxy;
 @property (strong, nonatomic) NSOutputStream *outputStream;
 @property (strong, nonatomic) NSInputStream *inputStream;
-@property (nonatomic) dispatch_queue_t writeQueue;  //分离序列化和写操作，并确保每个线程对writeDispatchData是安全的
-@property (nonatomic) dispatch_queue_t readQueue;  //分离反序列化和读操作，并确保每个线程对readDispatchData是安全的
+@property (nonatomic) dispatch_queue_t writeQueue;  //由于读操作与写操作相互之间的操作是串行执行的，确保读操作与写操作互不影响
+@property (nonatomic) dispatch_queue_t readQueue;  //由于读操作与写操作相互之间的操作是串行执行的，确保读操作与写操作互不影响
 @property (nonatomic) dispatch_data_t writeDispatchData;
 @property (nonatomic) dispatch_data_t readDispatchData;
 @property (nonatomic) dispatch_block_t reachabilityBlock;

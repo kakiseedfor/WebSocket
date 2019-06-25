@@ -518,7 +518,7 @@
     
     self.navigationItem.title = @"Socket Lists";
     
-    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://119.29.3.36:6700/", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*", @"ws://10.0.2.20:8080/", @"ws://192.168.90.216:3457/mktdata?contractid=5237"];
+    _dataSrouce = @[@"ws://121.40.165.18:8800", @"ws://119.29.3.36:6700/", @"ws://123.207.167.163:9010/ajaxchattest", @"wss://echo.websocket.org", @"wss://push.niugu99.com:9100/quotation?commodityId=*", @"ws://10.0.2.20:8080/", @"ws://192.168.90.216:3457/mktdata?contractid=5237", @"wss://push.bitmixs.com/tickdata?symbol=BTCUSDT,LTCUSDT,XRPUSDT"];
     [_tableView registerClass:UITableViewCell.class forCellReuseIdentifier:@"UITableViewCell"];
 }
 

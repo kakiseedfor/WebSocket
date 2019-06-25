@@ -17,6 +17,7 @@ extern STATUS_CODE Code_Connection;
 @property (strong, nonatomic) NSOutputStream *outputStream;
 @property (strong, nonatomic) NSInputStream *inputStream;
 @property (strong, nonatomic) NSMutableData *headerData;
+@property (strong, nonatomic) NSDictionary *proxySetting;
 @property (strong, nonatomic) NSURLRequest *request;
 @property (strong, nonatomic) NSString *securityKey;
 @property (strong, nonatomic) NSURL *url;
@@ -42,7 +43,9 @@ extern STATUS_CODE Code_Connection;
 - (void)connect:(NSString *)urlString{
     _url = [NSURL URLWithString:urlString];
     _request = [NSURLRequest requestWithURL:_url];
-    
+#if TARGET_IPHONE_SIMULATOR
+    [self startConnect];
+#else
     CTCellularData *cellularData = [[CTCellularData alloc] init];
     cellularData.cellularDataRestrictionDidUpdateNotifier = ^(CTCellularDataRestrictedState state) {
         switch (state) {
@@ -59,6 +62,7 @@ extern STATUS_CODE Code_Connection;
                 break;
         }
     };
+#endif
 }
 
 - (void)reconnect{
@@ -73,10 +77,17 @@ extern STATUS_CODE Code_Connection;
     CFDictionaryRef dicRef = CFNetworkCopySystemProxySettings();
     CFArrayRef arrayRef = CFNetworkCopyProxiesForURL((__bridge CFURLRef _Nonnull)(tempUrl), dicRef);
     
-    if (CFArrayGetCount(arrayRef)) {
-        CFDictionaryRef dic = CFArrayGetValueAtIndex(arrayRef, 0);
-        CFStringRef proxyType =  CFDictionaryGetValue(dic, kCFProxyTypeKey);
-        NSLog(@"%@",proxyType);
+    if (arrayRef && CFArrayGetCount(arrayRef)) {
+        CFDictionaryRef proxySetting = CFArrayGetValueAtIndex(arrayRef, 0);
+        CFStringRef proxyType =  CFDictionaryGetValue(proxySetting, kCFProxyTypeKey);
+        
+        if (proxyType == kCFProxyTypeAutoConfigurationURL) {
+            
+        }else if (proxyType == kCFProxyTypeAutoConfigurationJavaScript){
+            
+        }else if(proxyType != kCFProxyTypeNone){
+            _proxySetting = (__bridge NSDictionary *)proxySetting;
+        }
     }
     
     [self initialStream];
@@ -97,11 +108,17 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)initialStream{
+    NSString *host = _url.host;
     UInt32 port = _url.port.unsignedIntValue ? _url.port.unsignedIntValue : (self.isSecurity ? 443 : 80);
+    
+    if (_proxySetting) {
+        host = _proxySetting[(NSString *)kCFProxyHostNameKey];
+        port = [_proxySetting[(NSString *)kCFProxyPortNumberKey] unsignedIntValue];
+    }
     
     CFReadStreamRef readStreamRef;
     CFWriteStreamRef writeStreamRef;
-    CFStreamCreatePairWithSocketToHost(kCFAllocatorDefault, (__bridge CFStringRef)_url.host, port, &readStreamRef, &writeStreamRef);
+    CFStreamCreatePairWithSocketToHost(kCFAllocatorDefault, (__bridge CFStringRef)host, port, &readStreamRef, &writeStreamRef);
     
     if (self.isSecurity) {
         CFMutableDictionaryRef settings = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, NULL, NULL);
@@ -140,6 +157,7 @@ extern STATUS_CODE Code_Connection;
     _securityKey = nil;
     _inputStream = nil;
     _outputStream = nil;
+    _proxySetting = nil;
 }
 
 - (void)sendShakehandHeader{
@@ -200,14 +218,12 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (BOOL)checkSecurity:(NSStream *)aStream{
-    SecTrustRef trustRef;
     SecTrustResultType resultType;
-    SecPolicyRef policyRef = SecPolicyCreateSSL(NO, (__bridge CFStringRef _Nullable)_url.host);
-    CFArrayRef arrayRef = (__bridge CFArrayRef)[aStream propertyForKey:(NSString *)kCFStreamPropertySSLPeerCertificates];
-    SecTrustCreateWithCertificates(arrayRef, policyRef, &trustRef);
+    SecTrustRef trustRef = (__bridge SecTrustRef)[aStream propertyForKey:(NSString *)kCFStreamPropertySSLPeerTrust];
     OSStatus status = SecTrustEvaluate(trustRef, &resultType);
     
     _trust = status == errSecSuccess && (resultType == kSecTrustResultUnspecified || resultType == kSecTrustResultProceed) ? YES : NO;
+    
     return _trust;
 }
 
