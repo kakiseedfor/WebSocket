@@ -72,7 +72,7 @@ extern STATUS_CODE Code_Connection;
 
 - (void)reconnect{
     if (_inputStream.streamStatus == NSStreamStatusError || _outputStream.streamStatus == NSStreamStatusError) {
-        [self closeStream];
+        [self stopStream];
         [_socketProxy reconnect];
     }
 }
@@ -87,6 +87,10 @@ extern STATUS_CODE Code_Connection;
 }
 
 - (void)closeStream{
+    [self stopStream];
+}
+
+- (void)stopStream{
     Code_Connection = Status_Code_Connection_Close;
     
     !_timer ? : dispatch_source_cancel(_timer);
@@ -134,7 +138,7 @@ extern STATUS_CODE Code_Connection;
                     [wsseakSelf finishDeserializeError:error];
                 }
                 
-                error ? : dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{  //心跳包超过3秒即为超时
+                error ? : dispatch_after(dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{  //心跳包超过3秒即为超时
                     wsseakSelf.heartbeat++;
                 });
             }
@@ -173,7 +177,7 @@ extern STATUS_CODE Code_Connection;
         __block size_t sumOffset = 0;
         dispatch_data_apply(self.writeDispatchData, ^bool(dispatch_data_t  _Nonnull region, size_t offset, const void * _Nonnull buffer, size_t size) {
             NSInteger length = [self.outputStream write:buffer maxLength:size];
-            sumOffset += length ? length : 0;
+            sumOffset += length > 0 ? length : 0;
             
             return length < size ? NO : YES;
         });

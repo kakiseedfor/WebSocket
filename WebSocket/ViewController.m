@@ -369,7 +369,7 @@
     }];
     
     if (ABS(offset) && self.dataSource.count) {
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.dataSource.count - 1 inSection:0];
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[self.tableView numberOfRowsInSection:0] - 1 inSection:0];
         [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:NO];
     }
 }
@@ -438,8 +438,9 @@
     [alertVC addAction:cancleAction];
     [alertVC addAction:confirmAction];
     
-    [self presentViewController:alertVC animated:YES completion:^{
-    }];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentViewController:alertVC animated:YES completion:^{}];
+    });
 }
 
 - (void)finalizeOperation{

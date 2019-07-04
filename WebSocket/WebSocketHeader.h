@@ -46,9 +46,10 @@ typedef NS_ENUM(NSInteger, STATUS_CODE) {
     Status_Code_Connection_Doing = 1002,
     Status_Code_Connection_Error = 1003,
     Status_Code_Connection_Invalid = 1004,
+    Status_Code_Connection_Reachability = 1005,
     
-    Status_Code_Protocol_Error = 1005,
-    Status_Code_Invalid_UTF8 = 1007,
+    Status_Code_Protocol_Error = 1100,
+    Status_Code_Invalid_UTF8 = 1101,
 };
 
 static int64_t timeout = 10; //连接超时时间
