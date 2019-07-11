@@ -57,14 +57,17 @@
     CGFloat heightRatio = self.size.height / image.size.height;
     CGFloat width = (widthRatio < heightRatio ? self.size.width : image.size.height * heightRatio);
     CGFloat height = (widthRatio < heightRatio ? image.size.height * widthRatio : self.size.height);
-    CGContextRef contextRef = CGBitmapContextCreate(NULL, width, height, CGImageGetBitsPerComponent(image.CGImage), 0, CGColorSpaceCreateDeviceRGB(), kCGImageAlphaNoneSkipLast);
+    CGColorSpaceRef spaceRef = CGColorSpaceCreateDeviceRGB();
+    CGContextRef contextRef = CGBitmapContextCreate(NULL, width, height, CGImageGetBitsPerComponent(image.CGImage), 0, spaceRef, kCGImageAlphaNoneSkipLast);
+    CFRelease(spaceRef);
+    
     CGContextDrawImage(contextRef, CGRectMake(0.f, 0.f, width, height), image.CGImage);
     CGImageRef imageRef = CGBitmapContextCreateImage(contextRef);
     
     self.image = [UIImage imageWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
     
-    CFRelease(contextRef);
     CFRelease(imageRef);
+    CFRelease(contextRef);
 }
 
 - (void)textSize{
@@ -189,7 +192,7 @@
     _semaphore = dispatch_semaphore_create(1);
     _dataSource = [NSMutableArray array];
     _manager = [[WebSocketManager alloc] initWith:self];
-    
+
     [self.view addSubview:self.tableView];
     [self.view addSubview:self.inputView];
     [self.view addSubview:self.optionBtn];
@@ -198,27 +201,27 @@
         make.top.left.right.equalTo(self.view);
         make.bottom.equalTo(self.inputView.mas_top);
     }];
-    
+
     [_inputView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.bottom.equalTo(self.mas_bottomLayoutGuideTop);
         make.left.right.equalTo(self.view);
         make.height.mas_equalTo(48.f);
     }];
-    
+
     [_optionBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(self.view.mas_right).offset(-16.f);
         make.centerY.equalTo(self.inputView.mas_centerY);
     }];
-    
+
     [_textField mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(self.optionBtn.mas_left).offset(-12.f);
         make.left.equalTo(self.view.mas_left).offset(16.f);
         make.centerY.equalTo(self.inputView.mas_centerY);
     }];
-    
+
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
-    
+
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapAciton:)];
     tap.numberOfTapsRequired = 1;
     [self.view addGestureRecognizer:tap];
@@ -265,7 +268,7 @@
 
 - (void)photoAction{
     BOOL valid = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
-    valid = [UIImagePickerController isCameraDeviceAvailable:UIImagePickerControllerCameraDeviceRear];
+    valid = valid ? [UIImagePickerController isCameraDeviceAvailable:UIImagePickerControllerCameraDeviceRear] : valid;
     
     if (valid) {
         AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];

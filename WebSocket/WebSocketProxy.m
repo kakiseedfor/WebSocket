@@ -76,6 +76,7 @@ extern STATUS_CODE Code_Connection;
     
     CFDictionaryRef dicRef = CFNetworkCopySystemProxySettings();
     CFArrayRef arrayRef = CFNetworkCopyProxiesForURL((__bridge CFURLRef _Nonnull)(tempUrl), dicRef);
+    CFRelease(dicRef);
     
     if (arrayRef && CFArrayGetCount(arrayRef)) {
         CFDictionaryRef proxySetting = CFArrayGetValueAtIndex(arrayRef, 0);
@@ -126,6 +127,7 @@ extern STATUS_CODE Code_Connection;
         CFDictionarySetValue(settings, kCFStreamSSLPeerName, kCFNull);  //设置校验域名
         CFReadStreamSetProperty(readStreamRef, kCFStreamPropertySSLSettings, settings);
         CFWriteStreamSetProperty(writeStreamRef, kCFStreamPropertySSLSettings, settings);
+        CFRelease(settings);
     }
     
     _inputStream = (__bridge NSInputStream *)readStreamRef;

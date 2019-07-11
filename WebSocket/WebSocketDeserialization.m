@@ -90,11 +90,13 @@ extern STATUS_CODE Code_Connection;
             payload = (payload == PAY_LOAD_126 ? CFSwapInt16BigToHost(tempload) : CFSwapInt64BigToHost(tempload));
         }
         
-        uint8_t mask[maskLength];
+        uint8_t *mask = NULL;
         if (maskLength) {
+            uint8_t tempMask[maskLength];
             dispatch_data_t subData = dispatch_data_create_subrange(*data, header - maskLength, maskLength);
             const uint8_t *subBytes = ((NSData *)subData).bytes;
-            memcpy(mask, subBytes, maskLength);
+            memcpy(tempMask, subBytes, maskLength);
+            mask = tempMask;
         }
         
         *data = dispatch_data_create_subrange(*data, header, dispatch_data_get_size(*data) - header);

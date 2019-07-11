@@ -73,8 +73,9 @@
 
 #pragma mark KVOController
 
-@interface KVOController ()
-@property (nonatomic) CFRunLoopObserverRef observerRef;
+@interface KVOController (){
+    CFRunLoopObserverRef observerRef;
+}
 @property (weak, nonatomic) NSObject *original;
 @property (strong, nonatomic) NSMutableArray<KVOInfo *> *kvoInfos;
 
@@ -84,8 +85,8 @@
 
 - (void)dealloc{
     NSLog(@"%s",__FUNCTION__);
-    CFRunLoopRemoveObserver(CFRunLoopGetCurrent(), self.observerRef, kCFRunLoopDefaultMode);
-    CFRelease(self.observerRef);
+    CFRunLoopRemoveObserver(CFRunLoopGetCurrent(), observerRef, kCFRunLoopDefaultMode);
+    CFRelease(observerRef);
     [self removeAllObserver];
 }
 
@@ -103,11 +104,11 @@
 
 - (void)addObserver{
     __weak typeof(self) weakSelf = self;
-    self.observerRef = CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault, 0xa0, YES, INT_MAX, ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
+    observerRef = CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault, 0xa0, YES, INT_MAX, ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
         [weakSelf updateKVOInfos];
     });
     
-    CFRunLoopAddObserver(CFRunLoopGetCurrent(), self.observerRef, kCFRunLoopDefaultMode);
+    CFRunLoopAddObserver(CFRunLoopGetCurrent(), observerRef, kCFRunLoopDefaultMode);
 }
 
 - (void)updateKVOInfos{
