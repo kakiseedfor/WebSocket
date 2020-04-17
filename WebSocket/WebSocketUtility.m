@@ -131,6 +131,12 @@ NSString *OriginUrl(NSURL *url){
     return urlString;
 }
 
+/**
+ Http 1.x无状态协议：
+    1、每个请求都是相互独立的[即当前请求是不知道上个请求是失败或成功]
+    2、每个请求都包含了完整的请求所需的信息[造成每次请求，Http协议头都可能会携带相同的信息]，
+    3、发送请求不涉及状态变更[即只有成功或失败]
+ */
 CFHTTPMessageRef ShakehandHeader(NSString *secWebSocketKey, NSURLRequest *request, NSArray<NSHTTPCookie *> *_Nullable cookies){
     CFHTTPMessageRef messageRef = CFHTTPMessageCreateRequest(kCFAllocatorDefault, CFSTR("GET"), (__bridge CFURLRef _Nonnull)request.URL, kCFHTTPVersion1_1);
     CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Host"), (__bridge CFStringRef _Nullable)(request.URL.host));

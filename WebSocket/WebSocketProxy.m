@@ -171,7 +171,8 @@ extern STATUS_CODE Code_Connection;
         _securityKey = [[NSData dataWithBytes:bytes length:16] base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
         
         CFHTTPMessageRef messageRef = ShakehandHeader(_securityKey, _request, @[]);
-        NSData *data = (__bridge NSData *)CFHTTPMessageCopySerializedMessage(messageRef);
+        NSData *data = (__bridge_transfer NSData *)CFHTTPMessageCopySerializedMessage(messageRef);
+        NSLog(@"%@",[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
         
         NSInteger length = [self.outputStream write:data.bytes maxLength:data.length];
         if (length < data.length) {
