@@ -145,8 +145,8 @@ CFHTTPMessageRef ShakehandHeader(NSString *secWebSocketKey, NSURLRequest *reques
     CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Key"), (__bridge CFStringRef _Nullable)secWebSocketKey);
     CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Origin"), (__bridge CFStringRef _Nullable)OriginUrl(request.URL));
     CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Version"), CFSTR("13"));
-    CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Protocol"), CFSTR(""));
-    CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Extensions"), CFSTR(""));
+    CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Protocol"), NULL);
+    CFHTTPMessageSetHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Extensions"), NULL);
     
     [cookies enumerateObjectsUsingBlock:^(NSHTTPCookie * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         CFHTTPMessageSetHeaderFieldValue(messageRef, (__bridge CFStringRef _Nonnull)obj.name, (__bridge CFStringRef _Nonnull)obj.value);

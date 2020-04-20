@@ -10,6 +10,14 @@
 #import "WebSocketUtility.h"
 #import <CoreTelephony/CTCellularData.h>
 
+/**
+    WebSocket：
+        1、是基于TCP/IP之上的协议，是应用层协议。
+        2、基于Http/Https协议建立握手连接，除此之外没有其他关系。
+        3、其真正意义是握手连接过程中，指定服务器建立TCP/IP的Socket连接。
+        4、基于基本数据帧协议进行数据传输；亦可使用基于此协议之上的STOMP等协议。
+ */
+
 extern STATUS_CODE Code_Connection;
 
 @interface WebSocketProxy ()<NSStreamDelegate>
@@ -130,8 +138,8 @@ extern STATUS_CODE Code_Connection;
         CFRelease(settings);
     }
     
-    _inputStream = (__bridge NSInputStream *)readStreamRef;
-    _outputStream = (__bridge NSOutputStream *)writeStreamRef;
+    _inputStream = CFBridgingRelease(readStreamRef);
+    _outputStream = CFBridgingRelease(writeStreamRef);
     _inputStream.delegate = self;
     _outputStream.delegate = self;
     
@@ -171,7 +179,7 @@ extern STATUS_CODE Code_Connection;
         _securityKey = [[NSData dataWithBytes:bytes length:16] base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
         
         CFHTTPMessageRef messageRef = ShakehandHeader(_securityKey, _request, @[]);
-        NSData *data = (__bridge_transfer NSData *)CFHTTPMessageCopySerializedMessage(messageRef);
+        NSData *data = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(messageRef));
         NSLog(@"%@",[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
         
         NSInteger length = [self.outputStream write:data.bytes maxLength:data.length];
@@ -198,7 +206,8 @@ extern STATUS_CODE Code_Connection;
         NSError *error = statusCode < 400 ? nil : [NSError errorWithDomain:[NSString stringWithFormat:@"Request failed with response code %ld",(long)statusCode] code:Status_Code_Connection_Error userInfo:@{}];
         
         if (!error) {
-            NSString *accept = (__bridge NSString *)(CFHTTPMessageCopyHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Accept")));
+            
+            NSString *accept = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Accept")));
             
             NSMutableString *securityKey = [NSMutableString stringWithString:_securityKey];
             [securityKey appendString:self.appendSecurityKey];
@@ -208,7 +217,7 @@ extern STATUS_CODE Code_Connection;
                 error = [NSError errorWithDomain:@"Verify Sec-WebSocket-Key failed!" code:Status_Code_Connection_Error userInfo:@{}];
             }
             
-            NSString *protocol = (__bridge NSString *)(CFHTTPMessageCopyHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Protocol")));
+            NSString *protocol = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(messageRef, CFSTR("Sec-WebSocket-Protocol")));
             if (!error && protocol.length) {
                 error = [NSError errorWithDomain:@"The Sec-WebSocket-Protocol has not setted!" code:Status_Code_Connection_Error userInfo:@{}];
             }
@@ -216,7 +225,7 @@ extern STATUS_CODE Code_Connection;
         
         ![self.delegate respondsToSelector:@selector(didConnect:outputStream:error:)] ? : [self.delegate didConnect:self.inputStream outputStream:self.outputStream error:error];
         error ? [self closeStream] : [self resetStream];
-         NSLog(@"%@",[[NSString alloc] initWithData:(__bridge NSData * _Nonnull)(CFHTTPMessageCopySerializedMessage(messageRef)) encoding:NSUTF8StringEncoding]);
+         NSLog(@"%@",[[NSString alloc] initWithData:CFBridgingRelease(CFHTTPMessageCopySerializedMessage(messageRef)) encoding:NSUTF8StringEncoding]);
     }
 }
 
